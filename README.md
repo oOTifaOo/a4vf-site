@@ -1,8 +1,12 @@
 # A4VFamily – Lịch chiếu Anime (static site)
 
 ## Cấu trúc
-- `index.html`: giao diện (danh sách + trang chi tiết từng phim, đường dẫn dạng `#phim-<id>`).
-- `data.js`: dữ liệu phim. Hiện là **dữ liệu mẫu**, sẽ được script ghi đè.
+- `index.html`: khung trang (đầu trang, menu, chân trang, link CDN của Bootstrap, Material Symbols, Google Fonts).
+- `css/tokens.css`: màu, font, bo góc. `css/app.css`: kiểu dáng các thành phần (mobile-first).
+- `js/app.js`: khởi động và bảng đường dẫn. `js/config.js`: nhãn và icon.
+- `js/domain/`: quy tắc nghiệp vụ (giờ chiếu, lọc, sắp xếp, theo dõi). `js/domain/catalog.js` đổi dữ liệu `data.js` sang tên trường dễ đọc.
+- `js/components/`, `js/views/`, `js/ui/`: mảnh giao diện dùng chung, từng trang, tooltip/toast/giao diện sáng tối.
+- `data.js`: dữ liệu phim. Hiện là **dữ liệu mẫu**, sẽ được script ghi đè. Định dạng không đổi.
 - `scripts/update.mjs`: lấy thông tin từ AniList, ghép với link bản quyền trong Google Sheet, ghi lại `data.js`.
 - `.github/workflows/update.yml`: chạy script mỗi 6 giờ và khi bạn bấm chạy tay.
 - `data/links.csv`: bản dự phòng của Google Sheet (dùng khi chưa cấu hình `SHEET_CSV_URL`).
@@ -38,16 +42,37 @@ Mỗi nền tảng là **một dòng** trong Sheet, lặp lại cùng `anilist_i
 ## Tự điền link từng tập
 Dán link playlist YouTube vào cột `link_xem`, script `apps-script/link-tap.gs` (chạy trong Google Sheet) tự tìm video, đọc số tập từ tiêu đề và điền vào cột `link_cac_tap` mỗi ngày. Script chỉ bổ sung tập còn thiếu nên link bạn sửa tay được giữ nguyên. Tập nào chưa có link riêng thì nút tập dùng link chung ở `link_xem`.
 
+FPT Play không cần `link_cac_tap`: `scripts/update.mjs` tự tạo link từng tập bằng cách thêm `/tap-<số tập>` vào link ở `link_xem`. Tập nào bạn điền tay trong `link_cac_tap` thì dùng link đó.
+
+Tập có link video YouTube riêng trong `link_cac_tap` sẽ phát ngay trên trang phim. Link playlist hoặc link kênh không nhúng được theo từng tập nên vẫn mở sang YouTube. Nếu chủ video tắt nhúng, người xem bấm nút "Mở trên YouTube" dưới khung phát.
+
 Mỗi phim hiện dùng dòng đầu tiên tìm thấy (một nền tảng).
 
+## Tìm kiếm
+Ô tìm ở Theo mùa và trang Tìm Anime tìm theo tên trong Sheet (`ten_viet`), tên tiếng Anh và Romaji của AniList, có dấu hay không dấu đều được. Phim không có `ten_viet` thì chỉ tìm được bằng tên Anh hoặc Romaji.
+
+## Tab Engsub
+Phim có trong Sheet được `scripts/update.mjs` thêm các nền tảng lấy từ link streaming của AniList. Chúng nằm ở tab Engsub trên trang phim, giờ chiếu theo AniList, và không hiện trên thẻ phim. Bộ lọc Engsub cũng tìm thấy các phim này. AniList không cho biết phụ đề của từng link, nên một số link (nhất là YouTube) có thể không có tiếng Anh.
+
 ## Sửa thông tin chung
-Mở `index.html`, tìm phần footer để đổi link Facebook, Discord và email liên hệ.
+Mở `index.html`, tìm phần footer để đổi link Facebook và email liên hệ.
+
+## Sửa giao diện
+| Việc | Sửa ở đâu |
+|---|---|
+| Đổi màu, font | `css/tokens.css` |
+| Đổi nhãn, icon | `js/config.js` |
+| Thêm trang | Thêm file trong `js/views/`, một dòng trong `ROUTES` ở `js/app.js`, một link trong `index.html` |
+| Thêm tooltip | Thêm `data-bs-title="..."` vào phần tử; nút chỉ có icon cần thêm `aria-label` |
+
+Icon lấy từ Material Symbols, tên icon tra tại fonts.google.com/icons.
 
 ## Chạy thử trên máy (local)
 Cần cài [Node.js](https://nodejs.org) (bản LTS, từ 18 trở lên).
 1. `cap-nhat-local.bat` (Windows) hoặc `./cap-nhat-local.sh`: kéo dữ liệu thật từ Google Sheet + AniList về `data.js`. Link Sheet nằm trong `sheet-url.txt` (dòng đầu tiên).
 2. `chay-local.bat` hoặc `./chay-local.sh`: mở website tại http://localhost:8080.
-3. Sửa Sheet xong, chạy lại bước 1 rồi nhấn Ctrl+F5 trên trình duyệt. Sửa `index.html` thì chỉ cần Ctrl+F5.
+3. Sửa Sheet xong, chạy lại bước 1 rồi nhấn Ctrl+F5 trên trình duyệt. Sửa `index.html`, `css/` hoặc `js/` thì chỉ cần Ctrl+F5.
+Giao diện dùng ES module nên phải mở qua máy chủ web như trên, không mở trực tiếp bằng cách nhấp đúp `index.html`.
 Lưu ý: đợi khoảng 5 phút sau khi sửa Sheet vì Google cập nhật bản "Publish to web" chậm.
 
 ## Tự động lấy toàn bộ anime của mùa (mới)

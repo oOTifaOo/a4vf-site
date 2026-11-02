@@ -1,0 +1,123 @@
+/* Màu, font và bo góc chỉ đặt ở file này.
+   Bố cục: lịch phát sóng theo mùa, mỗi phim là một tấm vé có poster sát mép trái;
+   dải đầu trang và chân trang màu xanh thương hiệu A4VFamily. */
+
+:root {
+  --bg: #eef1f7;
+  --surface: #ffffff;
+  --surface-raised: #e4e9f3;
+  --ink: #1d2330;
+  --muted: #5a6579;
+  --line: #d3dae8;
+  --header: #2e4fa0;
+  --on-header: #ffffff;
+  --accent: #1f5fb4;
+  --on-accent: #ffffff;
+  --accent-soft: #dce7f7;
+  --accent-text: #1a55a3;
+  --star: #a86f00;
+  --star-on-dark: #ffc53d;
+
+  --status-air: #0b7350;
+  --status-soon: #2256b0;
+  --status-done: #5a6579;
+
+  --lang-vi: #1a6fc2;
+  --lang-en: #c93030;
+  --lang-dub: #1f8048;
+
+  --season-spring: #c7286a;
+  --season-summer: #0a7682;
+  --season-fall: #bb3f0a;
+  --season-winter: #2a66ab;
+
+  --font-display: "Cal Sans", "Be Vietnam Pro", system-ui, sans-serif;
+  --font-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --target: 44px;
+  --gutter-left: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #292a2a;
+    --surface: #323334;
+    --surface-raised: #45474a;
+    --ink: #ececec;
+    --muted: #b4b7bb;
+    --line: #46484a;
+    --accent: #1878bd;
+    --on-accent: #ffffff;
+    --accent-soft: #24425c;
+    --accent-text: #7cc2f2;
+    --star: #ffc53d;
+    --status-air: #4fd1a1;
+    --status-soon: #8ab4ff;
+    --status-done: #b4b7bb;
+    --season-spring: #ff8dbd;
+    --season-summer: #5cd0dc;
+    --season-fall: #ff9a63;
+    --season-winter: #8cc0ff;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #292a2a;
+  --surface: #323334;
+  --surface-raised: #45474a;
+  --ink: #ececec;
+  --muted: #b4b7bb;
+  --line: #46484a;
+  --accent: #1878bd;
+  --on-accent: #ffffff;
+  --accent-soft: #24425c;
+  --accent-text: #7cc2f2;
+  --star: #ffc53d;
+  --status-air: #4fd1a1;
+  --status-soon: #8ab4ff;
+  --status-done: #b4b7bb;
+  --season-spring: #ff8dbd;
+  --season-summer: #5cd0dc;
+  --season-fall: #ff9a63;
+  --season-winter: #8cc0ff;
+  color-scheme: dark;
+}
+
+/* Maps the tokens onto Bootstrap, so its components follow both themes. */
+:root,
+:root[data-bs-theme] {
+  --bs-body-bg: var(--bg);
+  --bs-body-color: var(--ink);
+  --bs-body-font-family: var(--font-body);
+  --bs-body-line-height: 1.55;
+  --bs-secondary-color: var(--muted);
+  --bs-tertiary-bg: var(--surface-raised);
+  --bs-border-color: var(--line);
+  --bs-focus-ring-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.dropdown-menu {
+  --bs-dropdown-bg: var(--surface);
+  --bs-dropdown-link-active-bg: var(--accent-soft);
+  --bs-dropdown-link-active-color: var(--accent-text);
+  --bs-dropdown-link-hover-bg: var(--surface-raised);
+}
+
+.progress {
+  --bs-progress-bg: var(--surface-raised);
+  --bs-progress-bar-bg: var(--accent);
+  --bs-progress-height: 4px;
+}
+
+.table {
+  --bs-table-bg: transparent;
+}
+
+.toast {
+  --bs-toast-bg: var(--surface);
+  --bs-toast-border-color: var(--line);
+}

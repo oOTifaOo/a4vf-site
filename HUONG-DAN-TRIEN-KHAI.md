@@ -1,16 +1,17 @@
 # Hướng dẫn triển khai A4VFamily (GitHub + Host.vn)
 
 Mô hình hoạt động:
-Google Sheet + AniList -> GitHub Actions (mỗi 6 giờ) -> cập nhật `data.js` trên GitHub -> Cron trên Host.vn tải `data.js` về website.
-Giao diện (`index.html`, logo) chỉ cần tải lên host khi bạn sửa giao diện.
+Google Sheet + AniList -> GitHub Actions (mỗi 6 giờ) -> cập nhật `data.js` trên GitHub -> GitHub Pages phục vụ `data.js` -> website trên host đọc thẳng từ GitHub Pages. Không cần Cron.
+Giao diện (`index.html`, `css/`, `js/`, logo) chỉ cần tải lên host khi bạn sửa giao diện.
 
 ## Phần 1. Cập nhật mã nguồn trên GitHub
 
 Repo của bạn đã chạy được workflow, nên chỉ cần thay file, không tạo lại.
 
-1. Giải nén `a4vf-site.zip` trên máy.
+1. Giải nén `a4vf-site.zip` ra một thư mục riêng.
 2. Vào repo trên GitHub > **Add file > Upload files**.
-3. Kéo vào các file/thư mục sau (ghi đè): `index.html`, `data.js`, `README.md`, `HUONG-DAN-TRIEN-KHAI.md`, thư mục `scripts/`, `data/`, `apps-script/`, `logos/`.
+3. Kéo vào các file/thư mục sau (ghi đè): `index.html`, `README.md`, `HUONG-DAN-TRIEN-KHAI.md`, thư mục `css/`, `js/`, `scripts/`, `apps-script/`, `logos/`.
+   **KHÔNG upload `data.js` trong zip**: đó là dữ liệu mẫu, sẽ đè lên dữ liệu thật.
 4. **KHÔNG upload `.github/workflows/update.yml`**: bản của bạn đang chứa link CSV riêng. Ghi đè là mất link.
 5. Bấm **Commit changes**.
 6. Vào **Actions > Cập nhật lịch chiếu > Run workflow**. Chờ dấu tích xanh.
@@ -21,64 +22,56 @@ Muốn thêm logo: bỏ file vào thư mục `logos/` (đúng tên trong `logos/
 
 ## Phần 2. Đưa lên Host.vn
 
-### Bước 0. Quan trọng: đừng ghi đè WordPress
-Website `a4vf.net` đang chạy WordPress trong `public_html`. Hãy đặt trang mới ở một **subdomain** (khuyên dùng), ví dụ `lich.a4vf.net`, để thử nghiệm mà không ảnh hưởng trang cũ.
+### Bước 0. Sao lưu trước khi đụng vào public_html
+Website đặt thẳng trong `public_html`, cùng chỗ với WordPress. Hãy tạo bản sao lưu toàn bộ `public_html` và tải về `.htaccess` hiện tại trước khi làm.
 
-### Bước 1. Tạo subdomain
-- Đăng nhập trang quản trị hosting (cPanel hoặc DirectAdmin) > **Subdomains** > tạo `lich` cho `a4vf.net`.
-- Ghi lại thư mục gốc của nó (thường `public_html/lich` hoặc `domains/a4vf.net/public_html/lich`).
-- Nếu DNS a4vf.net do Host.vn quản lý, subdomain tự hoạt động. Nếu DNS đặt ở nơi khác (Cloudflare...), thêm bản ghi **A** cho `lich` trỏ tới IP hosting.
+### Bước 1. Tải file website lên
+- Vào **File Manager** > mở `public_html`.
+- Upload `a4vf-host.zip` rồi **Extract**. Gồm: `index.html`, `css/`, `js/`, `logos/`.
+- Gói này cố ý không có `.htaccess` và `data.js`, nên không đụng cấu hình WordPress và dữ liệu đang có.
+- Nếu `public_html` đã có thư mục `css/`, `js/` hoặc `logos/` của trang cũ, dừng lại kiểm tra trước khi ghi đè.
 
-### Bước 2. Bật HTTPS
-- Trong panel: **SSL/TLS** hoặc **Let's Encrypt** > cấp chứng chỉ cho `lich.a4vf.net`. Chờ vài phút.
+### Bước 2. Sửa .htaccess của WordPress
+Bật hiển thị file ẩn, mở `.htaccess` trong `public_html`, dán đoạn sau lên **trên** dòng `# BEGIN WordPress`, không sửa phần còn lại:
 
-### Bước 3. Tải file website lên
-- Vào **File Manager** > mở thư mục gốc của subdomain.
-- Upload `a4vf-host.zip` rồi **Extract**. Gồm: `index.html`, `data.js`, `.htaccess`, `logos/`.
-- Bật hiển thị file ẩn (Show hidden files) để thấy `.htaccess`.
+    DirectoryIndex index.html index.php
+    <IfModule mod_headers.c>
+      <FilesMatch "\.(html|js|css)$">
+        Header set Cache-Control "no-cache"
+      </FilesMatch>
+    </IfModule>
 
-### Bước 4. Cập nhật tự động data.js bằng Cron
-Repo GitHub phải ở chế độ **Public** (script tải qua raw.githubusercontent.com).
+### Bước 3. Bật GitHub Pages cho data.js
+Repo GitHub phải ở chế độ **Public**.
+1. Vào repo > **Settings > Pages**. Ở **Source** chọn **Deploy from a branch**, nhánh `main`, thư mục `/ (root)`, bấm **Save**.
+2. Chờ 1-2 phút, mở `https://TENGITHUB.github.io/TENREPO/data.js` thấy nội dung bắt đầu bằng `const SEASONS` hoặc `/* Tạo tự động` là được.
+3. Trong `js/config.js` điền địa chỉ đó vào `REMOTE_DATA_URL`, rồi tải lại file này lên host và GitHub.
+4. Tải `data.js` thật trên máy bạn lên `public_html` để làm bản dự phòng khi GitHub Pages lỗi. Bản này không tự cập nhật.
 
-1. Upload `cap-nhat-data.sh` vào thư mục gốc tài khoản hosting (ngoài `public_html`).
-2. Mở file, sửa 2 dòng:
-   - `REPO_RAW`: thay `TENGITHUB` bằng tên tài khoản GitHub của bạn (nhánh `main`).
-   - `DEST`: đường dẫn tuyệt đối tới `data.js` của subdomain, ví dụ `/home/TENTAIKHOAN/public_html/lich/data.js` (xem đường dẫn trong File Manager).
-3. Panel > **Cron Jobs** > thêm lệnh, chạy mỗi 30 phút (hoặc mỗi giờ):
-   `sh /home/TENTAIKHOAN/cap-nhat-data.sh`
-   Lịch: `*/30 * * * *`
-4. Bấm chạy thử một lần, kiểm tra thông báo "Đã cập nhật data.js" hoặc "Không có thay đổi".
+**Quay lại trang cũ khi cần:** đổi tên `index.html` trong `public_html` thành `index-moi.html`, trang chủ WordPress sẽ hiện lại.
 
-### Bước 5. Kiểm tra
-- Mở `https://lich.a4vf.net`: thấy lịch chiếu, danh sách theo mùa, poster, trang chi tiết.
+### Bước 4. Kiểm tra
+- Mở `https://a4vf.net`: thấy lịch chiếu, danh sách theo mùa, poster, trang chi tiết.
 - Mở một trang phim, tải lại bằng F5: trang vẫn hiện (website dùng `#` nên không cần cấu hình đặc biệt).
-- Thử ☆ Theo dõi, bộ lọc "Phim của tôi" và bộ lọc phụ đề.
+- Thử sao Theo dõi, bộ lọc "Phim của tôi" và bộ lọc phụ đề.
 - Mở bằng điện thoại.
-- Sau 6 giờ (hoặc bấm Run workflow rồi chờ tới lần cron kế tiếp), kiểm tra `data.js` trên host đã đổi.
-
-### Bước 6. Chuyển trang cũ sang trang mới (khi đã ưng ý)
-Chọn một trong hai:
-- **Đơn giản:** trong WordPress, sửa menu "Lịch chiếu" trỏ tới `https://lich.a4vf.net`.
-- **Chuyển hướng:** thêm vào `.htaccess` của WordPress (trước dòng `# BEGIN WordPress`):
-  `Redirect 301 /lich-chieu/ https://lich.a4vf.net/`
+- Bấm Run workflow, chờ khoảng 2 phút rồi tải lại trang: dữ liệu mới phải hiện ra.
 
 ## Phần 3. Khi cần cập nhật về sau
 
 | Việc | Cách làm |
 |---|---|
-| Thêm/sửa link phim, nền tảng | Sửa Google Sheet. Tự cập nhật trong tối đa 6 giờ + chu kỳ cron |
-| Cập nhật ngay | GitHub > Actions > Run workflow, sau đó chạy Cron thủ công trên host |
+| Thêm/sửa link phim, nền tảng | Sửa Google Sheet. Tự cập nhật trong tối đa 6 giờ |
+| Cập nhật ngay | GitHub > Actions > Run workflow, chờ khoảng 2 phút |
 | Thêm logo | Bỏ file vào `logos/` trên host (và trên GitHub để lưu trữ) |
-| Sửa giao diện | Thay `index.html` trên host |
+| Sửa giao diện | Thay `index.html`, `css/`, `js/` trên host |
 | Ẩn một phim | Thêm dòng `anilist_id` của phim vào Sheet, điền `x` vào cột `an` |
 
 ## Xử lý lỗi thường gặp
 
-- **Trang trắng hoặc không có phim:** `data.js` thiếu hoặc lỗi. Mở `https://lich.a4vf.net/data.js` kiểm tra; chạy lại Cron.
-- **Cron báo "Tải lỗi":** repo đang Private hoặc `REPO_RAW` sai tên/nhánh.
+- **Trang báo không tải được dữ liệu:** kiểm tra `REMOTE_DATA_URL` trong `js/config.js`, mở thử địa chỉ đó trên trình duyệt, và kiểm tra `public_html` có `data.js` dự phòng.
+- **Trang chỉ hiện vòng xoay tải:** thiếu thư mục `js/` trên host, hoặc đang mở file bằng cách nhấp đúp thay vì qua website.
+- **Địa chỉ GitHub Pages báo 404:** repo đang Private, hoặc chưa bật Pages, hoặc sai tên repo.
 - **Poster không hiện:** ảnh lấy từ AniList; kiểm tra mạng, thử tải lại. Nếu bị chặn hàng loạt, báo lại để chuyển sang lưu poster trên host.
 - **Logo hiện hình tròn chữ viết tắt:** tên file chưa khớp với tên nền tảng trong Sheet (xem `logos/README.txt`).
 - **Giao diện cũ sau khi cập nhật:** xóa cache trình duyệt (Ctrl+F5). File `.htaccess` đã đặt cache ngắn cho `data.js`.
-
-## Phương án khác (nếu muốn nhanh hơn và không cần Cron)
-Đưa thẳng repo lên **Cloudflare Pages** hoặc **GitHub Pages** (miễn phí): mỗi lần Actions cập nhật `data.js`, website tự cập nhật, không cần Cron trên Host.vn. Trỏ subdomain `lich` bằng bản ghi CNAME tới địa chỉ do dịch vụ cấp. Nếu muốn dùng, báo tôi để hướng dẫn chi tiết.

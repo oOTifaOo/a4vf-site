@@ -15,7 +15,7 @@ const types = {
   ".svg": "image/svg+xml", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8",
 };
 // Chỉ phục vụ các file của website, không lộ script, file cấu hình, link Sheet...
-const allowed = (p) => p === "index.html" || p === "data.js" || p.startsWith("logos" + sep);
+const allowed = (p) => p === "index.html" || p === "data.js" || ["logos", "css", "js"].some((d) => p.startsWith(d + sep));
 
 http.createServer(async (req, res) => {
   try {
