@@ -68,6 +68,13 @@ function fptEpisodes(url, episodes) {
   return Object.fromEntries(Array.from({ length: episodes }, (_, i) => [i + 1, `${base}/tap-${i + 1}`]));
 }
 
+// Netflix: link_xem là link xem tập 1 (/watch/<số>); mỗi tập sau số cuối tăng thêm 1
+function netflixEpisodes(url, episodes) {
+  const first = /^https?:\/\/(?:www\.)?netflix\.com\/(?:[a-z-]+\/)?watch\/(\d+)/i.exec(url)?.[1];
+  if (!first) return {};
+  return Object.fromEntries(Array.from({ length: episodes }, (_, i) => [i + 1, `https://www.netflix.com/watch/${Number(first) + i}`]));
+}
+
 const YES = /^(x|1|y|yes|true|co|có|v|✓|✔)$/i; // cột long_tieng: đánh dấu nền tảng này có bản lồng tiếng
 // Giờ Việt Nam. Nhận: 2026-10-04 21:30 | 2026-10-04 9:30 | 04/10/2026 21:30 (ngày/tháng/năm), có thể kèm giây
 function vnMs(v) {
@@ -214,7 +221,8 @@ async function main() {
       const first = gt ?? aniFirst; // giờ VN ghi đè giờ AniList, theo từng nền tảng
       if (!first) return null;
       // Link điền tay trong link_cac_tap được ưu tiên hơn link tự tạo
-      const e = { ...fptEpisodes(cleanUrl(row.link_xem), m.episodes || 12), ...parseEps(row.link_cac_tap) };
+      const link = cleanUrl(row.link_xem), count = m.episodes || 12;
+      const e = { ...fptEpisodes(link, count), ...netflixEpisodes(link, count), ...parseEps(row.link_cac_tap) };
       const ms = parseMilestones(row.gio_cac_tap);
       return {
         n: row.nen_tang || "Chưa rõ",
