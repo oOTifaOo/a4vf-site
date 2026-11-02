@@ -26,6 +26,7 @@ function parseCSV(t) {
   return r.map((x) => Object.fromEntries(keys.map((k, i) => [k, (x[i] || "").trim()])));
 }
 
+const hidden = new Set();
 async function loadSheet() {
   const url = process.env.SHEET_CSV_URL;
   const text = url
@@ -34,35 +35,109 @@ async function loadSheet() {
   const byId = new Map();
   for (const r of parseCSV(text)) {
     const id = Number(r.anilist_id);
-    if (!Number.isInteger(id) || id <= 0 || r.an) continue; // bỏ dòng mẫu và dòng bị ẩn
-    if (!byId.has(id)) byId.set(id, r); // hiện tại mỗi phim dùng dòng đầu tiên
+    if (!Number.isInteger(id) || id <= 0) continue;
+    if (r.an) { hidden.add(id); continue; } // dòng bị ẩn: cũng không tự động thêm lại
+    if (!byId.has(id)) byId.set(id, []);
+    byId.get(id).push(r); // mỗi dòng = một nền tảng; dòng đầu tiên là nền tảng chính
   }
   return byId;
 }
 
-const QUERY = `query($ids:[Int],$page:Int){Page(page:$page,perPage:50){media(id_in:$ids,type:ANIME){
-  id idMal title{romaji english} format season seasonYear episodes genres popularity isAdult
-  coverImage{large} startDate{year month day}
+function cleanUrl(v) {
+  let s = String(v || "").trim();
+  if (!s) return "";
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = "https://" + s; // thiếu http(s) thì tự thêm
+  return /^https?:\/\//i.test(s) ? s : ""; // chặn javascript:, data: ...
+}
+// Cột link_cac_tap: mỗi dòng "số tập|link" (do Apps Script tự điền, bạn cũng sửa tay được)
+function parseEps(text) {
+  const e = {};
+  for (const line of String(text || "").split(/\r?\n/)) {
+    const m = /^\s*(\d{1,3})\s*[|=]\s*(\S+)\s*$/.exec(line);
+    const url = m && cleanUrl(m[2]);
+    if (url) e[Number(m[1])] = url;
+  }
+  return e;
+}
+
+const VN_TIME = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+const YES = /^(x|1|y|yes|true|co|có|v|✓|✔)$/i; // cột long_tieng: đánh dấu nền tảng này có bản lồng tiếng
+const vnMs = (s) => (VN_TIME.test(String(s || "").trim()) ? Date.parse(String(s).trim().replace(" ", "T") + ":00+07:00") : null);
+const isoZ = (ms) => new Date(ms).toISOString().replace(".000Z", "Z");
+// Cột gio_cac_tap: "số tập|yyyy-MM-dd HH:mm" = mốc giờ mới từ tập đó (tập sau đó tính tiếp theo tuần)
+function parseMilestones(text) {
+  const m = {};
+  for (const line of String(text || "").split(/\r?\n/)) {
+    const x = /^\s*(\d{1,3})\s*[|=]\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*$/.exec(line);
+    const ms = x && vnMs(x[2]);
+    if (ms) m[Number(x[1])] = isoZ(ms);
+  }
+  return m;
+}
+
+const FIELDS = `id idMal title{romaji english} format season seasonYear episodes genres popularity isAdult
+  description(asHtml:false) trailer{id site} coverImage{large} startDate{year month day}
   nextAiringEpisode{episode airingAt}
   airingSchedule(perPage:1){nodes{episode airingAt}}
-}}}`;
+  externalLinks{site url type}`;
+const QUERY = `query($ids:[Int],$page:Int){Page(page:$page,perPage:50){media(id_in:$ids,type:ANIME){${FIELDS}}}}`;
+const QUERY_SEASON = `query($season:MediaSeason,$year:Int,$page:Int){Page(page:$page,perPage:50){pageInfo{hasNextPage}
+  media(season:$season,seasonYear:$year,type:ANIME,format_in:[TV,TV_SHORT,ONA],isAdult:false,sort:POPULARITY_DESC){${FIELDS}}}}`;
 
-async function anilist(ids) {
+async function gql(query, variables) {
   const res = await fetch("https://graphql.anilist.co", {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ query: QUERY, variables: { ids, page: 1 } }),
+    body: JSON.stringify({ query, variables }),
   });
   if (!res.ok) throw new Error("AniList lỗi " + res.status);
   const j = await res.json();
   if (j.errors) throw new Error(JSON.stringify(j.errors));
-  return j.data.Page.media;
+  return j.data.Page;
 }
-
+// Các mùa tự động lấy: mặc định mùa trước, mùa hiện tại, mùa sau. Đổi bằng biến SEASONS="fall-2026,winter-2027"
+function autoSeasons() {
+  if (process.env.SEASONS === "off") return [];
+  if (process.env.SEASONS) return process.env.SEASONS.split(",").map((x) => x.trim().toLowerCase()).filter((x) => /^(winter|spring|summer|fall)-\d{4}$/.test(x));
+  const d = new Date(), q = Math.floor(d.getUTCMonth() / 3), y = d.getUTCFullYear(), N = ["winter", "spring", "summer", "fall"];
+  return [-1, 0, 1].map((o) => { const k = q + o; return `${N[(k + 4) % 4]}-${y + Math.floor(k / 4)}`; });
+}
+async function anilistSeason(key) {
+  const [season, year] = key.split("-"), out = [];
+  for (let page = 1; page <= 8; page++) {
+    const r = await gql(QUERY_SEASON, { season: season.toUpperCase(), year: +year, page });
+    out.push(...r.media);
+    if (!r.pageInfo.hasNextPage) break;
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  return out;
+}
 const seasonOf = (ms) => {
   const d = new Date(ms);
   return ["winter", "spring", "summer", "fall"][Math.floor(d.getUTCMonth() / 3)] + "-" + d.getUTCFullYear();
 };
+
+// Trailer từ AniList: chỉ nhận YouTube/Dailymotion với id hợp lệ
+function trailerOf(m) {
+  const t = m.trailer, site = String(t?.site || "").toLowerCase();
+  return t?.id && /^[\w-]{3,40}$/.test(t.id) && (site === "youtube" || site === "dailymotion") ? { s: site, id: t.id } : null;
+}
+
+// Mô tả dự phòng từ AniList (tiếng Anh), bỏ thẻ HTML, cắt ngắn
+function synopsis(m) {
+  const t = String(m.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return t.length > 600 ? t.slice(0, 597).replace(/\s+\S*$/, "") + "…" : t;
+}
+
+// Phim không có trong Sheet: nền tảng lấy từ link streaming của AniList (nếu có), phụ đề mặc định Engsub
+function autoRow(m) {
+  const st = (m.externalLinks || []).find((l) => l.type === "STREAMING" && cleanUrl(l.url));
+  return {
+    nen_tang: st ? st.site : "AniList",
+    link_xem: st ? st.url : `https://anilist.co/anime/${m.id}`,
+    ngon_ngu: "Engsub",
+  };
+}
 
 function firstAirMs(m) {
   const n = m.nextAiringEpisode || m.airingSchedule?.nodes?.[0];
@@ -73,32 +148,51 @@ function firstAirMs(m) {
 
 async function main() {
   const sheet = await loadSheet();
-  if (!sheet.size) throw new Error("Sheet không có dòng hợp lệ, giữ nguyên data.js cũ.");
-  const ids = [...sheet.keys()], media = [];
+  const ids = [...sheet.keys()], media = [], seen = new Set();
   for (let i = 0; i < ids.length; i += 50) {
-    media.push(...(await anilist(ids.slice(i, i + 50))));
+    for (const m of (await gql(QUERY, { ids: ids.slice(i, i + 50), page: 1 })).media) { media.push(m); seen.add(m.id); }
     await new Promise((r) => setTimeout(r, 800));
   }
+  // Tự động thêm toàn bộ anime của các mùa gần đây (phim chưa có trong Sheet sẽ hiển thị là Engsub)
+  for (const key of autoSeasons()) {
+    const list = await anilistSeason(key);
+    let added = 0;
+    for (const m of list) if (!seen.has(m.id) && !hidden.has(m.id)) { media.push(m); seen.add(m.id); added++; }
+    console.log(`Mùa ${key}: ${list.length} phim, thêm tự động ${added}.`);
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  if (!media.length) throw new Error("Không có phim nào (Sheet trống và không lấy được mùa), giữ nguyên data.js cũ.");
   const shows = [];
   for (const m of media) {
-    const r = sheet.get(m.id);
-    let first = firstAirMs(m);
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(r.gio_tap1_vn)) {
-      first = Date.parse(r.gio_tap1_vn.replace(" ", "T") + ":00+07:00"); // giờ Việt Nam ghi đè giờ AniList
-    }
-    if (!first) { console.warn("Bỏ qua (thiếu ngày chiếu):", m.id); continue; }
+    const rows = sheet.get(m.id) || [autoRow(m)], r = rows[0], aniFirst = firstAirMs(m);
+    const ps = rows.map((row) => {
+      const first = vnMs(row.gio_tap1_vn) ?? aniFirst; // giờ VN ghi đè giờ AniList, theo từng nền tảng
+      if (!first) return null;
+      const e = parseEps(row.link_cac_tap), ms = parseMilestones(row.gio_cac_tap);
+      return {
+        n: row.nen_tang || "Chưa rõ",
+        u: cleanUrl(row.link_xem) || "#",
+        lang: row.ngon_ngu || "Vietsub",
+        ...(YES.test(String(row.long_tieng || "").trim()) ? { dub: true } : {}),
+        first: isoZ(first),
+        ...(Object.keys(e).length ? { e } : {}),
+        ...(Object.keys(ms).length ? { m: ms } : {}),
+      };
+    }).filter(Boolean);
+    if (!ps.length) { console.warn("Bỏ qua (thiếu ngày chiếu):", m.id); continue; }
     shows.push({
       id: m.id,
-      s: m.season && m.seasonYear ? `${m.season.toLowerCase()}-${m.seasonYear}` : seasonOf(first),
+      s: m.season && m.seasonYear ? `${m.season.toLowerCase()}-${m.seasonYear}` : seasonOf(Date.parse(ps[0].first)),
       t: r.ten_viet || m.title.english || m.title.romaji,
       alt: m.title.romaji,
-      first: new Date(first).toISOString().replace(".000Z", "Z"),
+      first: ps[0].first,
       eps: m.episodes || 12,
       v: m.popularity || 0,
       g: m.genres || [],
-      p: { n: r.nen_tang || "Chưa rõ", u: r.link_xem || "#" },
-      lang: r.ngon_ngu || "Vietsub",
+      ps,
+      ...((r.mo_ta || synopsis(m)) ? { d: r.mo_ta || synopsis(m) } : {}),
       f: FORMAT[m.format] || m.format || "TV Series",
+      ...(trailerOf(m) ? { tr: trailerOf(m) } : {}),
       ...(m.isAdult ? { nsfw: true } : {}),
       ...(m.coverImage?.large ? { img: m.coverImage.large } : {}),
       ...(m.idMal ? { mal: `https://myanimelist.net/anime/${m.idMal}` } : {}),

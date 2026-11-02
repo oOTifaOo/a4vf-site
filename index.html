@@ -2,25 +2,27 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>A4VFamily – Lịch chiếu Anime Vietsub bản quyền (prototype)</title>
+<title>A4VFamily – Lịch chiếu Anime Vietsub bản quyền</title>
 <style>
-:root{--bg:#f5f5f8;--card:#fff;--ink:#1d1d25;--mute:#6c6c7b;--line:#e3e3ec;--acc:#e8544e;--accInk:#fff;--chip:#ececf3;
+:root{--bg:#eef1f7;--card:#fff;--ink:#1d2330;--mute:#5f6b80;--line:#d3dae8;--acc:#1f5fb4;--accInk:#fff;--chip:#e4e9f3;--hd:#2e4fa0;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121217;--card:#1b1b23;--ink:#eeeef5;--mute:#9b9bad;--line:#2a2a36;--acc:#ff6b64;--accInk:#1a0a09;--chip:#25252f;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#121217;--card:#1b1b23;--ink:#eeeef5;--mute:#9b9bad;--line:#2a2a36;--acc:#ff6b64;--accInk:#1a0a09;--chip:#25252f;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#292a2a;--card:#323334;--ink:#ececec;--mute:#a6a9ad;--line:#46484a;--acc:#1b8bd3;--accInk:#fff;--chip:#45474a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#292a2a;--card:#323334;--ink:#ececec;--mute:#a6a9ad;--line:#46484a;--acc:#1b8bd3;--accInk:#fff;--chip:#45474a;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header{background:var(--card);border-bottom:1px solid var(--line)}
+header{background:var(--hd);color:#fff}
 .top{max-width:1100px;margin:0 auto;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
-.logo{font-weight:800;font-size:1.25rem;color:var(--acc);text-decoration:none}
-.logo small{display:block;font-size:.65rem;font-weight:500;color:var(--mute);letter-spacing:.04em}
+.logo{font-weight:800;font-size:1.25rem;color:#fff;text-decoration:none}
+.logo small{display:block;font-size:.65rem;font-weight:500;color:rgba(255,255,255,.75);letter-spacing:.04em}
 nav{display:flex;gap:4px;flex:1}
-nav a{padding:6px 12px;border-radius:8px;text-decoration:none;color:var(--ink)}
-nav a.on{background:var(--acc);color:var(--accInk)}
+nav a{padding:6px 12px;border-radius:8px;text-decoration:none;color:#fff}
+nav a:hover{background:rgba(255,255,255,.15)}
+nav a.on{background:#fff;color:var(--hd)}
 button,select,input{font:inherit;color:var(--ink)}
 button{cursor:pointer}
-.lamp{border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:5px 12px}
+.lamp{color:#fff;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);border-radius:999px;padding:5px 12px}
 .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
 .season{display:flex;align-items:center;justify-content:center;gap:16px;text-align:center;margin-bottom:16px}
 .season h1{margin:0;font-size:1.6rem}
@@ -46,8 +48,9 @@ select,input[type=search]{padding:6px 10px;border:1px solid var(--line);border-r
 .tags span{font-size:.72rem;padding:2px 8px;border-radius:6px;background:var(--chip);color:var(--mute)}
 .tags .sub{background:var(--acc);color:var(--accInk)}
 .empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:36px 0}
-footer{border-top:1px solid var(--line);padding:20px 16px;text-align:center;color:var(--mute);font-size:.85rem}
-footer a{color:var(--acc);text-decoration:none}
+footer{background:var(--hd);padding:20px 16px;text-align:center;color:#fff;font-size:.85rem}
+footer a{color:#fff;text-decoration:none}
+footer a:hover{text-decoration:underline}
 .note{max-width:1100px;margin:0 auto 12px;padding:0 16px;color:var(--mute);font-size:.8rem}
 .back{display:inline-block;margin-bottom:14px;color:var(--acc);text-decoration:none}
 .dhead{display:flex;gap:20px;flex-wrap:wrap}
@@ -69,16 +72,88 @@ dl.minfo{display:grid;grid-template-columns:130px 1fr;gap:8px 12px;margin:0}
 dl.minfo dt{font-weight:600;color:var(--mute)}
 dl.minfo dd{margin:0}
 dl.minfo a{color:var(--acc);text-decoration:none}
+.pp{display:grid;place-items:center;color:#fff;font-weight:800;position:relative}
+#home{max-width:1280px}
+.hsec{font-size:1.15rem;margin:4px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--acc)}
+.hsec small{font-weight:400;font-size:.8rem;color:var(--mute)}
+.strip{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;margin-bottom:20px;scroll-snap-type:x proximity}
+.pc{flex:0 0 175px;scroll-snap-align:start;text-decoration:none;color:var(--ink)}
+.pc .pp{height:245px;border-radius:12px;font-size:2rem}
+.pc b{display:block;font-size:.88rem;line-height:1.3;margin-top:6px}
+.pc small{color:var(--mute);font-size:.78rem}
+.tm{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.72);color:#fff;font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:6px}
+.dtabs{display:none;gap:6px;overflow-x:auto;margin-bottom:12px}
+.dt{border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:6px 14px;white-space:nowrap}
+.dt[aria-selected=true]{background:var(--acc);color:var(--accInk);border-color:var(--acc)}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;align-items:start}
+.col h3{margin:0 0 8px;font-size:.88rem;padding:6px 8px;border-radius:8px;background:var(--chip);text-align:center}
+.col.today h3{background:var(--acc);color:var(--accInk)}
+.mc{display:block;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:8px}
+.mc .pp{aspect-ratio:3/4;height:auto;font-size:1.4rem}
+.mc .in{padding:6px 8px;font-size:.78rem;line-height:1.35}
+.mc time{color:var(--acc);font-weight:700}
+@media(max-width:900px){.week{grid-template-columns:1fr}.dtabs{display:flex}.col:not(.sel){display:none}.col h3{display:none}.mc{display:flex}.mc .pp{flex:0 0 86px;height:124px}.mc .in{flex:1;padding:8px 10px;font-size:.85rem}}
+#list{max-width:none;padding-left:12px;padding-right:12px}
+#list .grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,390px),1fr));gap:10px}
+.c2{display:flex;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-height:214px}
+.cp{flex:0 0 150px;position:relative;overflow:hidden;display:flex;align-items:flex-end;text-decoration:none;color:#fff;background-size:cover}
+.cp:hover{filter:brightness(1.12)}
+.ini{position:absolute;inset:0;display:grid;place-items:center;font-size:1.8rem;font-weight:800}
+.ct{position:relative;width:100%;padding:26px 6px 6px;background:linear-gradient(transparent,rgba(0,0,0,.88));color:#ffd54a;font-weight:700;font-size:.82rem;line-height:1.25}
+.cb{min-width:0;flex:1;display:flex;flex-direction:column;padding:8px 10px 8px 0}
+.cl{color:var(--mute);font-size:.62rem}
+.cd{font-size:1.02rem;font-weight:800;line-height:1.25;margin:1px 0 4px}
+.c2 .alt{font-size:.66rem;margin:0}
+.lgs{display:flex;gap:6px;margin-top:auto;padding-top:8px}
+.lg img,.lgp{width:20px;height:20px;border-radius:4px;object-fit:cover;display:block}
+.lgp{display:grid;place-items:center;color:#fff;font-weight:700;font-size:.5rem}
+.c2 .tags{margin-top:5px;gap:3px}
+.c2 .tags span{background:#2f7fc6;color:#fff;font-size:.6rem;padding:1px 6px;border-radius:4px}
+.c2{position:relative}
+.trl{max-width:720px;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;position:relative}
+.trl iframe,.trb{position:absolute;inset:0;width:100%;height:100%;border:0}
+.trb{padding:0;background:#111;color:#fff;display:grid;place-items:center}
+.trb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85}
+.tpl{position:relative;width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.65);display:grid;place-items:center;font-size:26px;padding-left:4px}
+.syn{margin:10px 0 4px;line-height:1.55;max-width:70ch}
+.cdn{margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.cdl{color:var(--mute);font-size:.9rem}
+.cdb{display:flex;gap:8px}.cdb span{display:grid;place-items:center;min-width:56px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.cdb b{font-size:1.4rem;line-height:1.1;color:var(--acc);font-variant-numeric:tabular-nums}.cdb small{font-size:.7rem;color:var(--mute)}
+.fv{position:absolute;top:6px;left:6px;z-index:3;width:32px;height:32px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:18px;line-height:32px;padding:0;display:grid;place-items:center}
+.fv[aria-pressed=true]{background:var(--acc);color:var(--accInk)}
+.fvt{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:8px;padding:7px 12px;margin:6px 6px 0 0}
+.fvt[aria-pressed=true]{background:var(--acc);color:var(--accInk);border-color:var(--acc)}
+#fvn:not(:empty){background:var(--acc);color:var(--accInk);border-radius:999px;padding:0 6px;font-size:.75rem;margin-left:2px}
+nav a.on #fvn{background:var(--accInk);color:var(--acc)}
+#mine{max-width:none;padding-left:12px;padding-right:12px}
+#mine .grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,390px),1fr));gap:10px}
+.nx{margin:6px 0 0;font-size:.88rem}.nx b{color:var(--acc)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 16px;border-radius:8px;z-index:50;font-size:.9rem;max-width:90vw}
+@media(max-width:480px){.cp{flex-basis:118px}.cd{font-size:.92rem}.c2{min-height:170px}}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabp{border:1px solid var(--line);background:var(--chip);color:var(--ink);cursor:pointer}
+.tabp.on{background:var(--acc);color:var(--accInk);border-color:var(--acc)}
+.pi{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pp .ini,.dposter .ini{font-size:inherit}
+.dposter{position:relative;overflow:hidden}
 </style>
 </head>
 <body>
 <header><div class="top">
-  <a class="logo" href="#">A4VFamily<small>Lịch Chiếu Anime Bản Quyền</small></a>
-  <nav><a class="on" href="#">Lịch chiếu</a><a href="#">Mới chiếu</a><a href="#">Tìm Anime</a></nav>
+  <a class="logo" href="#trang-chu">A4VFamily<small>Lịch Chiếu Anime Bản Quyền</small></a>
+  <nav><a href="#trang-chu">Lịch chiếu</a><a href="#lich-chieu">Danh Sách Anime Theo Mùa</a></nav>
   <input type="search" id="q" placeholder="Tìm kiếm…" aria-label="Tìm kiếm">
   <button class="lamp" id="lamp">💡 Đèn</button>
 </div></header>
 
+<main class="wrap" id="home" hidden>
+  <h2 class="hsec">Hôm nay <small id="todaylbl"></small></h2>
+  <div class="strip" id="today"></div>
+  <h2 class="hsec">Lịch tuần <small>Giờ Việt Nam (UTC+7)</small></h2>
+  <div class="dtabs" id="dtabs" role="tablist"></div>
+  <div class="week" id="week"></div>
+</main>
 <main class="wrap" id="list">
   <div class="season">
     <button class="arrow" id="prev" aria-label="Mùa trước">‹</button>
@@ -88,15 +163,14 @@ dl.minfo a{color:var(--acc);text-decoration:none}
   <div class="filters">
     <label>Sắp xếp theo:
       <select id="sort"><option value="air">Lịch chiếu</option><option value="views">Phổ biến</option><option value="name">Tên Anime</option></select></label>
-    <label>Trạng thái:
-      <select id="status"><option value="">Tất cả</option><option value="air">Đang chiếu</option><option value="done">Đã chiếu</option><option value="soon">Sắp chiếu</option></select></label>
-    <label><input type="checkbox" id="nsfw"> NSFW/R18/Hentai</label>
+    <label>Hiển thị: <select id="fscope"><option value="all">Tất cả</option><option value="mine">Phim của tôi</option></select></label>
+    <label>Phụ đề: <select id="flang"><option value="all">Tất cả</option><option value="vi">Vietsub</option><option value="en">Engsub</option><option value="dub">Lồng tiếng</option></select></label>
     <span class="count" id="count"></span>
   </div>
   <div class="grid" id="grid"></div>
 </main>
 <main class="wrap" id="detail" hidden></main>
-<footer><a href="#">Facebook</a> | <a href="#">Discord</a><br>Chi tiết xin liên hệ: email@example.com</footer>
+<footer><a href="https://www.facebook.com/a4vfamily" target="_blank" rel="noopener">Facebook</a><br>Chi tiết xin liên hệ: a4vtranslation@gmail.com</footer>
 
 <script src="data.js"></script>
 <script>
@@ -107,55 +181,156 @@ const p2=n=>String(n).padStart(2,"0");
 const fmt=t=>{const d=new Date(t+VN);return `${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}, ${p2(d.getUTCDate())} Tháng ${p2(d.getUTCMonth()+1)} năm ${d.getUTCFullYear()}`};
 const hue=t=>{let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))%360;return h};
 const ini=t=>t.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
-const bg=(x,h)=>x.img?`background:center/cover url(${esc(x.img)})`:`background:linear-gradient(145deg,hsl(${h} 60% 48%),hsl(${(h+50)%360} 55% 30%))`;
-function info(x,now){
-  const f=Date.parse(x.first),a=now<f?0:Math.min(x.eps,Math.floor((now-f)/W)+1);
-  return{a,f,next:a<x.eps?f+a*W:null,st:a===0?"soon":a>=x.eps?"done":"air"};
+const grad=h=>`linear-gradient(145deg,hsl(${h} 60% 48%),hsl(${(h+50)%360} 55% 30%))`;
+const bg=(x,h)=>`background:${grad(h)}`;
+const pimg=x=>x.img&&/^(https?:|data:image\/)/i.test(x.img)?`<img class="pi" src="${esc(x.img)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`:"";
+function info(x,now,pl){
+  pl=pl||x.ps[0];
+  const f=Date.parse(pl.first||x.first),ks=Object.keys(pl.m||{}).map(Number);
+  const T=n=>{let k=0;for(const q of ks)if(q<=n&&q>k)k=q;return k?Date.parse(pl.m[k])+(n-k)*W:f+(n-1)*W};
+  let a=0;while(a<x.eps&&T(a+1)<=now)a++;
+  return{a,f,T,next:a<x.eps?T(a+1):null,st:a===0?"soon":a>=x.eps?"done":"air"};
 }
 const _d=new Date(),_cur=["winter","spring","summer","fall"][Math.floor(_d.getUTCMonth()/3)]+"-"+_d.getUTCFullYear();
-let si=SEASONS.findIndex(s=>s.k===_cur);if(si<0)si=SEASONS.length-1;
+const _has=k=>SHOWS.some(s=>s.s===k);
+let si=SEASONS.findIndex(s=>s.k===_cur&&_has(s.k));
+if(si<0){const ix=SEASONS.map((s,n)=>n).filter(n=>_has(SEASONS[n].k));si=ix.length?ix[ix.length-1]:Math.max(0,SEASONS.length-1)}
+const safe=u=>/^https?:\/\//i.test(u||"")?u:"#";
+const slug=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/gi,"d").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+function logo(p){
+  const ab=esc(p.n.split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase()),bgc="hsl("+hue(p.n)+" 55% 45%)";
+  return `<a class="lg" href="${esc(safe(p.u))}" target="_blank" rel="noopener" title="${esc(p.n)}"><img src="logos/${slug(p.n)}.png" alt="${esc(p.n)}" onerror="if(!this.dataset.t){this.dataset.t=1;this.src='logos/${slug(p.n)}.svg'}else if(this.dataset.t==1){this.dataset.t=2;this.src='logos/${slug(p.n)}.webp'}else this.replaceWith(Object.assign(document.createElement('span'),{className:'lgp',textContent:'${ab}',style:'background:${bgc}'}))"></a>`;
+}
+function card({x,i},extra=""){
+  const t=i.a?i.T(i.a):i.f;
+  return `<article class="c2">${fvBtn(x)}<a class="cp" href="#phim-${x.id}" style="${bg(x,hue(x.t))}"><span class="ini">${esc(ini(x.t))}</span>${pimg(x)}<span class="ct">${esc(x.t)}</span></a><div class="cb"><div class="cl">${i.a?`Tập ${i.a} đã được chiếu vào`:"Tập 1 sẽ chiếu vào"}</div><div class="cd">${fmt(t)}</div><p class="alt"><b>Tên khác:</b> ${esc(x.alt)}</p>${extra}<div class="lgs">${x.ps.map(logo).join("")}</div><div class="tags">${x.langs.map(l=>`<span>${esc(l)}</span>`).join("")}<span>${esc(x.f)}</span>${x.g.map(g=>`<span>${esc(g)}</span>`).join("")}</div></div></article>`;
+}
 function render(){
   const now=Date.now(),se=SEASONS[si],q=$("#q").value.trim().toLowerCase();
   $("#name").textContent=se.n;$("#range").textContent=se.r;
   $("#prev").disabled=si===0;$("#next").disabled=si===SEASONS.length-1;
   let L=SHOWS.filter(x=>x.s===se.k).map(x=>({x,i:info(x,now)}));
-  if(!$("#nsfw").checked)L=L.filter(o=>!o.x.nsfw);
-  const stf=$("#status").value;if(stf)L=L.filter(o=>o.i.st===stf);
+  L=L.filter(o=>!o.x.nsfw);
+  const mine=$("#fscope").value==="mine",lg=$("#flang").value;
+  if(mine)L=L.filter(o=>FOLLOW.has(o.x.id));
+  const kind=l=>/eng/i.test(l)?"en":/lồng|long tieng/i.test(l)?"dub":"vi";
+  if(lg!=="all")L=L.filter(o=>o.x.langs.some(l=>kind(l)===lg));
   if(q)L=L.filter(o=>(o.x.t+" "+o.x.alt).toLowerCase().includes(q));
   const so=$("#sort").value;
   L.sort(so==="name"?(a,b)=>a.x.t.localeCompare(b.x.t,"vi"):so==="views"?(a,b)=>b.x.v-a.x.v:(a,b)=>(a.i.next??9e15)-(b.i.next??9e15));
   $("#count").textContent=L.length+" anime";
+  if(mine)L.sort((a,b)=>(a.i.next??9e15)-(b.i.next??9e15));
   const lab={air:"Đang chiếu",done:"Đã chiếu",soon:"Sắp chiếu"};
   $("#grid").innerHTML=L.length?L.map(({x,i})=>{
     const h=hue(x.t);
     
     
-    return `<article class="card"><div class="poster" style="${bg(x,h)}">${x.img?"":esc(ini(x.t))}</div><div class="body"><span class="st ${i.st}">${lab[i.st]}</span><h3 class="t"><a href="#phim-${x.id}">${esc(x.t)}</a></h3><p class="alt"><b>Tên khác:</b> ${esc(x.alt)}</p><a class="plat" href="#phim-${x.id}">${esc(x.p.n)} · Xem chi tiết</a><div class="tags"><span class="sub">${esc(x.lang)}</span><span>${esc(x.f)}</span>${x.g.map(g=>`<span>${esc(g)}</span>`).join("")}</div></div></article>`;
-  }).join(""):`<div class="empty">Không có anime nào phù hợp.</div>`;
+    return card({x,i},mine&&FOLLOW.has(x.id)?(i.next?`<p class="nx">Tập ${i.a+1} chiếu sau <b>${eta(i.next-now)}</b></p>`:`<p class="nx">Đã chiếu hết</p>`):"");
+  }).join(""):`<div class="empty">${mine?"Bạn chưa theo dõi phim nào (bấm ☆ trên poster để thêm).":"Không có anime nào phù hợp."}</div>`;
 }
 $("#prev").onclick=()=>{si--;render()};$("#next").onclick=()=>{si++;render()};
-["#sort","#status","#nsfw"].forEach(s=>$(s).onchange=render);$("#q").oninput=render;
+$("#sort").onchange=render;$("#fscope").onchange=render;$("#flang").onchange=render;$("#q").oninput=render;
 $("#lamp").onclick=()=>{const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;r.dataset.theme=dark?"light":"dark"};
-SHOWS.forEach((x,n)=>x.id=x.id||n+1);
+SHOWS.forEach((x,n)=>{
+  x.id=x.id||n+1;
+  if(!x.ps)x.ps=[{n:x.p.n,u:x.p.u,lang:x.lang,e:x.e,first:x.first,m:x.m}];
+  x.p=x.ps[0];x.lang=x.ps[0].lang;x.first=x.ps[0].first||x.first;
+  x.langs=[...new Set(x.ps.flatMap(p=>[p.lang,...(p.dub&&!/lồng/i.test(p.lang)?["Lồng tiếng"]:[])]))];
+});
+
+/* ===== Theo dõi (lưu trong trình duyệt) ===== */
+const FKEY="a4vf_follow";let storeOK=true;const FOLLOW=new Set();
+try{(JSON.parse(localStorage.getItem(FKEY)||"[]")||[]).forEach(n=>FOLLOW.add(+n))}catch(_){storeOK=false}
+function saveF(){try{localStorage.setItem(FKEY,JSON.stringify([...FOLLOW]));storeOK=true}catch(_){storeOK=false}}
+const fvBtn=(x,txt)=>{const on=FOLLOW.has(x.id);return txt?`<button class="fvt" data-fv="${x.id}" data-t="1" aria-pressed="${on}">${on?"★ Đang theo dõi":"☆ Theo dõi"}</button>`:`<button class="fv" data-fv="${x.id}" aria-pressed="${on}" title="Theo dõi" aria-label="Theo dõi ${esc(x.t)}">${on?"★":"☆"}</button>`};
+function paintFv(){
+  document.querySelectorAll("[data-fv]").forEach(b=>{const on=FOLLOW.has(+b.dataset.fv);b.setAttribute("aria-pressed",on);b.textContent=b.dataset.t?(on?"★ Đang theo dõi":"☆ Theo dõi"):(on?"★":"☆")});
+  
+}
+let toastT;function toast(m){let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";document.body.appendChild(t)}t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3500)}
+function eta(ms){const m=Math.max(0,Math.round(ms/6e4)),d=Math.floor(m/1440),h=Math.floor(m%1440/60);return d?d+" ngày "+h+" giờ":h?h+" giờ "+m%60+" phút":m+" phút"}
+document.addEventListener("click",e=>{
+  const f=e.target.closest&&e.target.closest("[data-fv]");
+  if(f){e.preventDefault();const id=+f.dataset.fv;FOLLOW.has(id)?FOLLOW.delete(id):FOLLOW.add(id);saveF();paintFv();
+    if(curHash==="#lich-chieu"||curHash==="#danh-sach")render();else if(curHash===""||curHash==="#trang-chu")home();
+    if(!storeOK)toast("Trình duyệt không cho lưu danh sách, nên sẽ mất khi tải lại trang.");return}
+});
+let curShow=null,plIdx=0,cdT=0;
+const trSrc=t=>t.s==="dailymotion"?`https://www.dailymotion.com/embed/video/${t.id}?autoplay=1`:`https://www.youtube-nocookie.com/embed/${t.id}?autoplay=1&rel=0`;
+function trailerBox(x){
+  const t=x.tr;if(!t||!/^[\w-]{3,40}$/.test(t.id||"")||!/^(youtube|dailymotion)$/.test(t.s))return"";
+  const th=t.s==="youtube"?`<img src="https://i.ytimg.com/vi/${t.id}/hqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">`:"";
+  return `<h2 class="sec">Trailer</h2><div class="trl"><button class="trb" data-tr="1" aria-label="Phát trailer ${esc(x.t)}">${th}<span class="tpl">▶</span></button></div>`;
+}
 function detail(x){
-  const now=Date.now(),i=info(x,now),h=hue(x.t),se=SEASONS.find(s=>s.k===x.s),u=encodeURIComponent(location.href),et=n=>i.f+n*W;
+  if(curShow!==x){curShow=x;plIdx=0}
+  const pl=x.ps[plIdx]||x.ps[0],now=Date.now(),i=info(x,now,pl),h=hue(x.t),se=SEASONS.find(s=>s.k===x.s),u=encodeURIComponent(location.href),et=n=>i.T(n+1);
   const stat=i.a?`Tập ${i.a} đã được chiếu vào <b>${fmt(et(i.a-1))}</b>`:`Tập 1 sẽ chiếu vào <b>${fmt(i.f)}</b>`;
   const nxt=i.next&&i.a?`<br>Tập ${i.a+1} sẽ chiếu vào ${fmt(i.next)}`:(i.a>=x.eps?" · Đã chiếu hết":"");
   const N=[...Array(x.eps).keys()];
-  const eps=N.map(n=>n<i.a?`<a class="epb" href="${esc(x.p.u)}" target="_blank" rel="noopener" title="${fmt(et(n))}">Tập ${p2(n+1)}</a>`:`<span class="epb off" title="Chiếu: ${fmt(et(n))}">Tập ${p2(n+1)}</span>`).join("");
+  const eps=N.map(n=>{const lk=safe((pl.e&&pl.e[n+1])||pl.u);return n<i.a?(lk!=="#"?`<a class="epb" href="${esc(lk)}" target="_blank" rel="noopener" title="${fmt(et(n))}">Tập ${p2(n+1)}</a>`:`<span class="epb off" title="Chưa có link xem">Tập ${p2(n+1)}</span>`):`<span class="epb off" title="Chiếu: ${fmt(et(n))}">Tập ${p2(n+1)}</span>`}).join("");
   const rows=N.map(n=>`<tr><td>Tập ${p2(n+1)}</td><td>${n<i.a?"Đã chiếu":"Sắp chiếu"}</td><td>${fmt(et(n))}</td></tr>`).join("");
-  $("#detail").innerHTML=`<a class="back" href="#lich-chieu">‹ Quay lại phía trước</a><div class="dhead"><div class="dposter" style="${bg(x,h)}">${x.img?"":esc(ini(x.t))}</div><div class="dinfo"><span class="st ${i.st}">${{air:"Đang chiếu",done:"Đã chiếu",soon:"Sắp chiếu"}[i.st]}</span><h1>${esc(x.t)}</h1><p class="alt">${esc(x.alt)}</p><div class="share"><strong>Chia sẻ phim này</strong><a href="https://www.facebook.com/sharer.php?u=${u}" target="_blank" rel="noopener">Facebook</a><a href="https://twitter.com/share?url=${u}&text=${encodeURIComponent(x.t)}" target="_blank" rel="noopener">Twitter</a><button id="cp">Sao chép link</button><a href="${esc(x.mal||"#")}" target="_blank" rel="noopener">Myanimelist</a></div><p class="ep">${stat}${nxt}</p></div></div><h2 class="sec">Xem</h2><span class="tabp">${esc(x.p.n)}</span><div class="eps">${eps}</div><table class="sched">${rows}</table><h2 class="sec">Tổng quan</h2><dl class="minfo"><dt>Tên Romaji:</dt><dd>${esc(x.alt)}</dd><dt>Số tập:</dt><dd>${x.eps}</dd><dt>Mùa chiếu:</dt><dd><a href="#lich-chieu" data-s="${SEASONS.indexOf(se)}">${esc(se.n)}</a></dd><dt>Bản quyền:</dt><dd>${esc(x.p.n)}</dd><dt>Thể loại:</dt><dd><div class="tags"><span class="sub">${esc(x.lang)}</span><span>${esc(x.f)}</span>${x.g.map(g=>`<span>${esc(g)}</span>`).join("")}</div></dd><dt>Độ phổ biến:</dt><dd>${x.v.toLocaleString("vi-VN")}</dd></dl>`;
+  $("#detail").innerHTML=`<a class="back" href="#lich-chieu">‹ Quay lại phía trước</a><div class="dhead"><div class="dposter" style="${bg(x,h)}"><span class="ini">${esc(ini(x.t))}</span>${pimg(x)}</div><div class="dinfo"><span class="st ${i.st}">${{air:"Đang chiếu",done:"Đã chiếu",soon:"Sắp chiếu"}[i.st]}</span><h1>${esc(x.t)}</h1><p class="alt">${esc(x.alt)}</p><div class="share"><strong>Chia sẻ phim này</strong><a href="https://www.facebook.com/sharer.php?u=${u}" target="_blank" rel="noopener">Facebook</a><a href="https://twitter.com/share?url=${u}&text=${encodeURIComponent(x.t)}" target="_blank" rel="noopener">Twitter</a><button id="cp">Sao chép link</button><a href="${esc(x.mal||"#")}" target="_blank" rel="noopener">Myanimelist</a></div><p class="syn">${x.d?esc(x.d):"Chưa có mô tả nội dung cho phim này."}</p><div>${fvBtn(x,1)}</div><div class="cdn" id="cdn"></div></div></div><h2 class="sec">Xem</h2><div class="tabs">${x.ps.map((p,k)=>`<button class="tabp${k===plIdx?" on":""}" data-pl="${k}">${esc(p.n)}</button>`).join("")}</div><div class="eps">${eps}</div><table class="sched">${rows}</table>${trailerBox(x)}<h2 class="sec">Tổng quan</h2><dl class="minfo"><dt>Tên Romaji:</dt><dd>${esc(x.alt)}</dd><dt>Số tập:</dt><dd>${x.eps}</dd><dt>Mùa chiếu:</dt><dd><a href="#lich-chieu" data-s="${SEASONS.indexOf(se)}">${esc(se.n)}</a></dd><dt>Bản quyền:</dt><dd>${esc([...new Set(x.ps.map(p=>p.n))].join(", "))}</dd><dt>Thể loại:</dt><dd><div class="tags">${x.langs.map(l=>`<span class="sub">${esc(l)}</span>`).join("")}<span>${esc(x.f)}</span>${x.g.map(g=>`<span>${esc(g)}</span>`).join("")}</div></dd><dt>Độ phổ biến:</dt><dd>${x.v.toLocaleString("vi-VN")}</dd></dl>`;
   document.title=x.t+" – A4VFamily";
+  clearInterval(cdT);
+  const tgt=i.next||(i.a===0?i.f:null),epn=i.a+1,box=$("#cdn");
+  const tick=()=>{
+    if(!/^#phim-/.test(curHash)||curShow!==x){clearInterval(cdT);return}
+    if(!tgt){box.innerHTML=`<span class="cdl">Đã chiếu hết ${x.eps} tập</span>`;return}
+    const ms=tgt-Date.now();
+    if(ms<=0){clearInterval(cdT);detail(x);return}
+    const s=Math.floor(ms/1e3),v=[Math.floor(s/86400),Math.floor(s%86400/3600),Math.floor(s%3600/60),s%60];
+    box.innerHTML=`<span class="cdl">Tập ${epn} sẽ chiếu sau</span><span class="cdb">${["Ngày","Giờ","Phút","Giây"].map((l,k)=>`<span><b>${p2(v[k])}</b><small>${l}</small></span>`).join("")}</span><span class="cdl">${fmt(tgt)}</span>`;
+  };
+  tick();if(tgt)cdT=setInterval(tick,1e3);
   $("#cp").onclick=async e=>{try{await navigator.clipboard.writeText(location.href);e.target.textContent="Đã sao chép"}catch(_){e.target.textContent="Không sao chép được"}};
 }
-function route(){
-  const m=/^#phim-(\d+)$/.exec(location.hash),x=m&&SHOWS.find(s=>s.id===+m[1]);
-  $("#list").hidden=!!x;$("#detail").hidden=!x;
-  if(x){detail(x);scrollTo(0,0)}else{document.title="A4VFamily – Lịch chiếu Anime Vietsub bản quyền (prototype)";render()}
+const DOW=["Chủ nhật","Thứ hai","Thứ ba","Thứ tư","Thứ năm","Thứ sáu","Thứ bảy"],ORD=[1,2,3,4,5,6,0];
+const hm=ms=>{const d=new Date(ms+VN);return p2(d.getUTCHours())+":"+p2(d.getUTCMinutes())};
+const wdOf=x=>new Date(Date.parse(x.first)+VN).getUTCDay();
+const pp=(x,extra="")=>`<div class="pp" style="${bg(x,hue(x.t))}"><span class="ini">${esc(ini(x.t))}</span>${pimg(x)}${extra}</div>`;
+let wd=new Date(Date.now()+VN).getUTCDay();
+function home(){
+  const now=Date.now(),td=new Date(now+VN).getUTCDay();
+  const L=SHOWS.filter(x=>!x.nsfw).map(x=>({x,i:info(x,now)})).filter(o=>o.i.st==="air"||(o.i.st==="soon"&&o.i.f-now<14*864e5));
+  const byT=(a,b)=>hm(Date.parse(a.x.first)).localeCompare(hm(Date.parse(b.x.first)));
+  const today=L.filter(o=>wdOf(o.x)===td).sort(byT);
+  $("#todaylbl").textContent=DOW[td]+", "+new Date(now+VN).toISOString().slice(8,10)+"/"+new Date(now+VN).toISOString().slice(5,7);
+  $("#today").innerHTML=today.length?today.map(({x,i})=>{
+    const lastT=i.a?i.T(i.a):0,done=lastT&&lastT<=now&&now-lastT<864e5;
+    const t=done?lastT:(i.next||lastT),ep=done?i.a:Math.min(x.eps,i.a+1);
+    return `<a class="pc" href="#phim-${x.id}">${pp(x,`<span class="tm">${hm(t)}</span>`)}<b>${FOLLOW.has(x.id)?"★ ":""}${esc(x.t)}</b><small>${done?"Đã chiếu":"Sắp chiếu"} · Tập ${ep}/${x.eps}</small></a>`;
+  }).join(""):`<p class="alt">Hôm nay chưa có phim nào lên sóng.</p>`;
+  const mc=({x,i})=>`<a class="mc" href="#phim-${x.id}">${pp(x)}<div class="in"><time>${hm(Date.parse(x.first))}</time> · Tập ${i.next?i.a+1:i.a}<br><b>${FOLLOW.has(x.id)?"★ ":""}${esc(x.t)}</b><br><span class="alt">${esc(x.ps.map(p=>p.n).join(" · "))}</span></div></a>`;
+  $("#dtabs").innerHTML=ORD.map(d=>`<button class="dt" role="tab" data-d="${d}" aria-selected="${d===wd}">${d===td?"Hôm nay":DOW[d]}</button>`).join("");
+  $("#week").innerHTML=ORD.map(d=>{const c=L.filter(o=>wdOf(o.x)===d).sort(byT);
+    return `<section class="col${d===td?" today":""}${d===wd?" sel":""}"><h3>${DOW[d]}</h3>${c.length?c.map(mc).join(""):`<p class="alt" style="text-align:center">Trống</p>`}</section>`;
+  }).join("");
 }
-$("#detail").onclick=e=>{const a=e.target.closest("[data-s]");if(a)si=+a.dataset.s};
-addEventListener("hashchange",route);
-route();
+$("#dtabs").onclick=e=>{const b=e.target.closest(".dt");if(b){wd=+b.dataset.d;home()}};
+$("#q").addEventListener("input",()=>{if(curHash!=="#lich-chieu")go("#lich-chieu")});
+let curHash="";try{curHash=location.hash||""}catch(_){}
+function go(h){
+  curHash=h==="#"?"":h;
+  try{history.replaceState(null,"",h)}catch(_){}
+  route();
+}
+function route(){try{route0();if(typeof paintFv==='function')paintFv()}catch(e){document.querySelectorAll("main").forEach(m=>m.hidden=true);let b=$("#err");if(!b){b=document.createElement("pre");b.id="err";b.style.cssText="padding:16px;margin:16px;white-space:pre-wrap;color:#b00020;background:#fdecea;border-radius:8px";document.body.insertBefore(b,document.querySelector("footer"))}b.textContent="Lỗi hiển thị trang: "+e.message+"\nHãy chụp màn hình dòng này gửi cho người hỗ trợ."}}
+function route0(){
+  const hs=curHash,m=/^#phim-(\d+)$/.exec(hs),x=m&&SHOWS.find(s=>s.id===+m[1]);
+  const v=x?"detail":(hs==="#phim-cua-toi"?(setTimeout(()=>{$("#fscope").value="mine";go("#lich-chieu")}),"list"):hs==="#lich-chieu"||hs==="#danh-sach")?"list":"home";
+  $("#home").hidden=v!=="home";$("#list").hidden=v!=="list";$("#detail").hidden=v!=="detail"; 
+  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",v!=="detail"&&a.getAttribute("href")===(v==="list"?"#lich-chieu":"#trang-chu")));
+  if(x){detail(x);scrollTo(0,0)}else{document.title="A4VFamily – Lịch chiếu Anime Vietsub bản quyền";v==="list"?render():home()}
+}
+$("#detail").onclick=e=>{const tb=e.target.closest("[data-tr]");if(tb&&curShow&&curShow.tr){const f=document.createElement("iframe");f.src=trSrc(curShow.tr);f.title="Trailer";f.allow="autoplay; encrypted-media; picture-in-picture; fullscreen";f.allowFullscreen=true;f.referrerPolicy="strict-origin-when-cross-origin";tb.parentNode.replaceChildren(f);return}const a=e.target.closest("[data-s]");if(a)si=+a.dataset.s;const t=e.target.closest("[data-pl]");if(t&&curShow){plIdx=+t.dataset.pl;detail(curShow)}};
+addEventListener("hashchange",()=>{curHash=location.hash;route()});
+document.addEventListener("click",e=>{
+  const a=e.target.closest&&e.target.closest('a[href^="#"]');
+  if(!a||a.target||e.defaultPrevented||e.button||e.ctrlKey||e.metaKey||e.shiftKey)return;
+  e.preventDefault();go(a.getAttribute("href"));
+});
+route();paintFv();
 </script>
 </body>
 </html>
