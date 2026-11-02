@@ -92,7 +92,7 @@ const FIELDS = `id idMal title{romaji english} format season seasonYear episodes
   externalLinks{site url type}`;
 const QUERY = `query($ids:[Int],$page:Int){Page(page:$page,perPage:50){media(id_in:$ids,type:ANIME){${FIELDS}}}}`;
 const QUERY_SEASON = `query($season:MediaSeason,$year:Int,$page:Int){Page(page:$page,perPage:50){pageInfo{hasNextPage}
-  media(season:$season,seasonYear:$year,type:ANIME,format_in:[TV,TV_SHORT,ONA],isAdult:false,sort:POPULARITY_DESC){${FIELDS}}}}`;
+  media(season:$season,seasonYear:$year,type:ANIME,format_in:[TV,TV_SHORT,ONA,OVA,MOVIE,SPECIAL],isAdult:false,sort:POPULARITY_DESC){${FIELDS}}}}`;
 
 async function gql(query, variables) {
   const res = await fetch("https://graphql.anilist.co", {
