@@ -15,6 +15,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+           - name: Kiểm tra secret
+        run: |
+          if [ -z "$S" ]; then echo ">>> SECRET TRỐNG"; else echo ">>> Secret có ${#S} ký tự"; fi
+        env:
+          S: ${{ secrets.SHEET_CSV_URL }}     
       - run: node scripts/update.mjs
         env:
           SHEET_CSV_URL: ${{ secrets.SHEET_CSV_URL }}
