@@ -7,6 +7,8 @@ on:
     paths: ["data/links.csv"]
 permissions:
   contents: write
+env:
+  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTKVrve7xXoM1txNQNzCd50WcMJX7O4D8PgOSJLqOhG9Dz5ZbctGEVQ7no_y4Pz0oZBVA_ERu4ZDvi_/pub?gid=76589246&single=true&output=csv"
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -15,14 +17,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Kiểm tra secret
+      - name: Xem máy chủ nhận được gì
         run: |
-          if [ -z "$S" ]; then echo ">>> SECRET TRỐNG"; else echo ">>> Secret có ${#S} ký tự"; fi
-        env:
-          S: ${{ secrets.SHEET_CSV_URL }}   
+          echo "Độ dài URL: ${#SHEET_CSV_URL} ký tự"
+          curl -sL "$SHEET_CSV_URL" | head -c 400
       - run: node scripts/update.mjs
-        env:
-          SHEET_CSV_URL: ${{ secrets.SHEET_CSV_URL }}
       - name: Commit nếu dữ liệu thay đổi
         run: |
           git config user.name "github-actions[bot]"
