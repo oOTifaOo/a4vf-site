@@ -8,26 +8,28 @@
 - `data/links.csv`: bản dự phòng của Google Sheet (dùng khi chưa cấu hình `SHEET_CSV_URL`).
 
 ## Cột của Google Sheet (hàng 1 là tiêu đề, giữ đúng tên cột)
-| Cột | Ý nghĩa |
-|---|---|
-| `anilist_id` | Số ID cuối URL AniList, ví dụ anilist.co/anime/**12345** (bắt buộc) |
-| `ten_viet` | Tên tiếng Việt, bỏ trống thì dùng tên Anh/Romaji |
-| `nen_tang` | Tên nền tảng, ví dụ Ani-One Việt Nam |
-| `link_xem` | Link xem hợp pháp (playlist hoặc trang phim) |
-| `ngon_ngu` | Vietsub / Engsub (bỏ trống = Vietsub). Có thể ghi `Lồng tiếng` nếu nền tảng chỉ có bản lồng tiếng |
-| `long_tieng` | Ghi `x` nếu nền tảng này **có thêm bản lồng tiếng** (phim hiện cả nhãn Vietsub và Lồng tiếng). Thêm cột này vào cuối Sheet, tên đúng `long_tieng` |
-| `gio_tap1_vn` | Giờ chiếu tập 1 tại Việt Nam, dạng `2026-10-04 21:30`. Bỏ trống thì dùng giờ AniList |
-| `an` | Điền `x` để tạm ẩn phim |
-| `mo_ta` | (Tuỳ chọn) Nội dung phim bằng tiếng Việt, hiện trong ô phim và trang chi tiết |
+Phim nào có trong Sheet nghĩa là **có tiếng Việt** (hiện nhãn Vietsub). Phim không có trong Sheet tự động là Engsub, nên **không cần cột ngôn ngữ**.
 
-| `link_cac_tap` | **Tự động điền.** Mỗi dòng dạng `số tập|link`. Để trống nếu dùng một link chung |
+| Cột | Bắt buộc | Ý nghĩa |
+|---|---|---|
+| `anilist_id` | Có | Số ID cuối URL AniList, ví dụ anilist.co/anime/**12345** |
+| `ten_viet` | Không | Tên tiếng Việt. Bỏ trống thì dùng tên Anh/Romaji |
+| `nen_tang` | Có | Tên nền tảng, ví dụ `Ani-One Việt Nam` (quyết định logo, xem `logos/README.txt`) |
+| `link_xem` | Có | Link xem hợp pháp (playlist hoặc trang phim) |
+| `gio_tap1_vn` | Không | Giờ chiếu tập 1 **theo giờ Việt Nam**, dạng `2026-10-04 21:30` (năm-tháng-ngày giờ:phút). Bỏ trống thì dùng giờ AniList. Xem lưu ý bên dưới |
+| `long_tieng` | Không | Ghi `x` nếu nền tảng này có thêm bản **lồng tiếng**. Bỏ trống nếu không |
+| `an` | Không | Ghi `x` để **ẩn phim khỏi website** (phim bị thêm nhầm, hết bản quyền, 18+...). Xoá `x` để hiện lại. Phim bị ẩn cũng không được tự động thêm lại từ AniList |
+| `mo_ta` | Không | Nội dung phim tiếng Việt. Bỏ trống thì hiện mô tả tiếng Anh của AniList. Có thể tự điền bằng `apps-script/mo-ta.gs` (dịch máy, bạn sửa lại được) |
+| `link_cac_tap` | Tự động | Mỗi dòng dạng `số tập|link`. Do Apps Script điền. Để trống nếu dùng một link chung |
+| `gio_cac_tap` | Không | Mốc giờ khi lịch bị lệch, mỗi dòng `số tập|yyyy-MM-dd HH:mm` |
+| `ngon_ngu` | Không dùng nữa | Có thể xoá cột. Nếu còn và có giá trị (ví dụ `Engsub`) thì vẫn được dùng |
 
-| `gio_cac_tap` | (Tuỳ chọn) Mốc giờ khi lịch bị lệch, mỗi dòng `số tập|yyyy-MM-dd HH:mm` |
+**Lưu ý khi nhập `gio_tap1_vn`:** Google Sheets hay tự đổi ngày giờ thành định dạng ngày của nó. Hãy bôi đen cả cột, chọn *Định dạng > Số > Văn bản thuần túy* (Plain text) **trước khi** nhập. Script cũng đọc được dạng `04/10/2026 21:30` (ngày/tháng/năm). Nếu giờ sai định dạng, script bỏ qua và dùng giờ AniList, đồng thời ghi cảnh báo trong nhật ký workflow.
 
 Logo nền tảng: xem `logos/README.txt`.
 
 ## Một phim nhiều nền tảng
-Mỗi nền tảng là **một dòng** trong Sheet, lặp lại cùng `anilist_id`. Mỗi dòng có `nen_tang`, `link_xem`, `ngon_ngu`, `gio_tap1_vn` và `link_cac_tap` riêng. Dòng **đầu tiên** của phim là nền tảng chính: quyết định vị trí trong Lịch chiếu và các cột `ten_viet`, `mo_ta`.
+Mỗi nền tảng là **một dòng** trong Sheet, lặp lại cùng `anilist_id`. Mỗi dòng có `nen_tang`, `link_xem`, `long_tieng`, `gio_tap1_vn` và `link_cac_tap` riêng. Dòng **đầu tiên** của phim là nền tảng chính: quyết định vị trí trong Lịch chiếu và các cột `ten_viet`, `mo_ta`.
 
 ## Giờ chiếu lệch so với quốc tế
 - Cả phim lệch đều đặn (ví dụ chiếu chậm 1 ngày): điền `gio_tap1_vn` của tập 1 trên dòng nền tảng đó. Để trống thì dùng giờ AniList.

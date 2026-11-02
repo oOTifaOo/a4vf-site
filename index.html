@@ -168,7 +168,7 @@ nav a.on #fvn{background:var(--accInk);color:var(--acc)}
   </div>
   <div class="filters">
     <label>Sắp xếp theo:
-      <select id="sort"><option value="air">Lịch chiếu</option><option value="views">Phổ biến</option><option value="name">Tên Anime</option></select></label>
+      <select id="sort"><option value="views" selected>Phổ biến</option><option value="air">Lịch chiếu</option><option value="name">Tên Anime</option></select></label>
     <label>Hiển thị: <select id="fscope"><option value="all">Tất cả</option><option value="mine">Phim của tôi</option></select></label>
     <label>Phụ đề: <select id="flang"><option value="all">Tất cả</option><option value="vi">Vietsub</option><option value="en">Engsub</option><option value="dub">Lồng tiếng</option></select></label>
     <span class="count" id="count"></span>
@@ -236,6 +236,7 @@ function render(){
 $("#prev").onclick=()=>{si--;render()};$("#next").onclick=()=>{si++;render()};
 $("#sort").onchange=render;$("#fscope").onchange=render;$("#flang").onchange=render;$("#q").oninput=render;
 $("#lamp").onclick=()=>{const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;r.dataset.theme=dark?"light":"dark"};
+{const SV={winter:"Đông",spring:"Xuân",summer:"Hạ",fall:"Thu"};SEASONS.forEach(s=>{const [k,y]=s.k.split("-");if(SV[k])s.n=`Anime Mùa ${SV[k]} ${y}`})}
 SHOWS.forEach((x,n)=>{
   x.id=x.id||n+1;
   if(!x.ps)x.ps=[{n:x.p.n,u:x.p.u,lang:x.lang,e:x.e,first:x.first,m:x.m}];

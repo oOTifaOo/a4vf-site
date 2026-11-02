@@ -4,6 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 
 const WEEK = 7 * 864e5;
 const SEASON_ORDER = { winter: 0, spring: 1, summer: 2, fall: 3 };
+const SEASON_VI = { winter: "Đông", spring: "Xuân", summer: "Hạ", fall: "Thu" };
 const SEASON_RANGE = {
   winter: "Tháng một - Tháng ba", spring: "Tháng tư - Tháng sáu",
   summer: "Tháng bảy - Tháng chín", fall: "Tháng mười - Tháng mười hai",
@@ -60,9 +61,18 @@ function parseEps(text) {
   return e;
 }
 
-const VN_TIME = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
 const YES = /^(x|1|y|yes|true|co|có|v|✓|✔)$/i; // cột long_tieng: đánh dấu nền tảng này có bản lồng tiếng
-const vnMs = (s) => (VN_TIME.test(String(s || "").trim()) ? Date.parse(String(s).trim().replace(" ", "T") + ":00+07:00") : null);
+// Giờ Việt Nam. Nhận: 2026-10-04 21:30 | 2026-10-04 9:30 | 04/10/2026 21:30 (ngày/tháng/năm), có thể kèm giây
+function vnMs(v) {
+  const s = String(v || "").trim();
+  let y, mo, d, h, mi, m;
+  if ((m = /^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})(?::\d{2})?$/.exec(s))) [, y, mo, d, h, mi] = m;
+  else if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})[ T](\d{1,2}):(\d{2})(?::\d{2})?$/.exec(s))) [, d, mo, y, h, mi] = m;
+  else return null;
+  if (+mo < 1 || +mo > 12 || +d < 1 || +d > 31 || +h > 23 || +mi > 59) return null;
+  const q = (n) => String(n).padStart(2, "0");
+  return Date.parse(`${y}-${q(mo)}-${q(d)}T${q(h)}:${mi}:00+07:00`);
+}
 const isoZ = (ms) => new Date(ms).toISOString().replace(".000Z", "Z");
 // Cột gio_cac_tap: "số tập|yyyy-MM-dd HH:mm" = mốc giờ mới từ tập đó (tập sau đó tính tiếp theo tuần)
 function parseMilestones(text) {
@@ -166,7 +176,9 @@ async function main() {
   for (const m of media) {
     const rows = sheet.get(m.id) || [autoRow(m)], r = rows[0], aniFirst = firstAirMs(m);
     const ps = rows.map((row) => {
-      const first = vnMs(row.gio_tap1_vn) ?? aniFirst; // giờ VN ghi đè giờ AniList, theo từng nền tảng
+      const gt = vnMs(row.gio_tap1_vn);
+      if (row.gio_tap1_vn && gt === null) console.warn(`Phim ${m.id}: gio_tap1_vn "${row.gio_tap1_vn}" sai định dạng, dùng giờ AniList. Cần dạng 2026-10-04 21:30`);
+      const first = gt ?? aniFirst; // giờ VN ghi đè giờ AniList, theo từng nền tảng
       if (!first) return null;
       const e = parseEps(row.link_cac_tap), ms = parseMilestones(row.gio_cac_tap);
       return {
@@ -205,7 +217,7 @@ async function main() {
   });
   const seasons = keys.map((k) => {
     const [s, y] = k.split("-");
-    return { k, n: `${s[0].toUpperCase() + s.slice(1)} ${y} Anime`, r: `${SEASON_RANGE[s]} ${y}` };
+    return { k, n: `Anime Mùa ${SEASON_VI[s]} ${y}`, r: `${SEASON_RANGE[s]} ${y}` };
   });
   shows.sort((a, b) => a.id - b.id);
   const out = "/* Tạo tự động bởi scripts/update.mjs. Không sửa tay. */\n" +
