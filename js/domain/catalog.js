@@ -6,6 +6,9 @@ import { languageKind } from './shows.js';
 
 const DUB_PATTERN = /lồng/i;
 
+/** Đổi địa chỉ data.js mỗi phút để trình duyệt không dùng bản đã lưu quá lâu. */
+const DATA_REFRESH_MS = 60_000;
+
 /** Cột ngon_ngu trong Sheet đôi khi chứa ngày giờ do nhập lệch cột; khi đó coi như Vietsub. */
 const languageOf = (value) => (/\d{4}-\d{1,2}-\d{1,2}/.test(value) ? 'Vietsub' : value);
 
@@ -86,7 +89,7 @@ async function loadDataFile() {
   const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
   if (REMOTE_DATA_URL && !isLocal) {
     try {
-      await loadScript(REMOTE_DATA_URL);
+      await loadScript(`${REMOTE_DATA_URL}?v=${Math.floor(Date.now() / DATA_REFRESH_MS)}`);
       return;
     } catch {
       console.warn('Không tải được data.js từ GitHub Pages, dùng bản trên host.');
