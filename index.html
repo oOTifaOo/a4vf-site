@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A4VFamily – Lịch chiếu Anime Vietsub bản quyền (prototype)</title>
+<style>
+:root{--bg:#f5f5f8;--card:#fff;--ink:#1d1d25;--mute:#6c6c7b;--line:#e3e3ec;--acc:#e8544e;--accInk:#fff;--chip:#ececf3;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121217;--card:#1b1b23;--ink:#eeeef5;--mute:#9b9bad;--line:#2a2a36;--acc:#ff6b64;--accInk:#1a0a09;--chip:#25252f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121217;--card:#1b1b23;--ink:#eeeef5;--mute:#9b9bad;--line:#2a2a36;--acc:#ff6b64;--accInk:#1a0a09;--chip:#25252f;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--line)}
+.top{max-width:1100px;margin:0 auto;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
+.logo{font-weight:800;font-size:1.25rem;color:var(--acc);text-decoration:none}
+.logo small{display:block;font-size:.65rem;font-weight:500;color:var(--mute);letter-spacing:.04em}
+nav{display:flex;gap:4px;flex:1}
+nav a{padding:6px 12px;border-radius:8px;text-decoration:none;color:var(--ink)}
+nav a.on{background:var(--acc);color:var(--accInk)}
+button,select,input{font:inherit;color:var(--ink)}
+button{cursor:pointer}
+.lamp{border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:5px 12px}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+.season{display:flex;align-items:center;justify-content:center;gap:16px;text-align:center;margin-bottom:16px}
+.season h1{margin:0;font-size:1.6rem}
+.season p{margin:0;color:var(--mute);font-size:.88rem}
+.arrow{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);font-size:1.1rem}
+.arrow:disabled{opacity:.35;cursor:default}
+.filters{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:16px}
+.filters label{display:flex;gap:6px;align-items:center;font-size:.88rem;color:var(--mute)}
+select,input[type=search]{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.count{margin-left:auto;font-size:.85rem;color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.card{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.poster{flex:0 0 84px;height:120px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:1.4rem}
+.body{min-width:0;flex:1}
+.t{margin:0;font-size:1rem;line-height:1.3}
+.t a{color:var(--ink);text-decoration:none}
+.st{display:inline-block;font-size:.7rem;padding:1px 8px;border-radius:999px;margin-bottom:4px;color:var(--accInk);background:var(--acc)}
+.st.done{background:var(--mute)}.st.soon{background:#3b82c4;color:#fff}
+.ep,.alt{font-size:.84rem;margin:4px 0 0}
+.alt{color:var(--mute)}
+.plat{display:inline-block;margin:8px 0 6px;padding:5px 12px;border-radius:8px;background:var(--acc);color:var(--accInk);text-decoration:none;font-size:.84rem}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tags span{font-size:.72rem;padding:2px 8px;border-radius:6px;background:var(--chip);color:var(--mute)}
+.tags .sub{background:var(--acc);color:var(--accInk)}
+.empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:36px 0}
+footer{border-top:1px solid var(--line);padding:20px 16px;text-align:center;color:var(--mute);font-size:.85rem}
+footer a{color:var(--acc);text-decoration:none}
+.note{max-width:1100px;margin:0 auto 12px;padding:0 16px;color:var(--mute);font-size:.8rem}
+.back{display:inline-block;margin-bottom:14px;color:var(--acc);text-decoration:none}
+.dhead{display:flex;gap:20px;flex-wrap:wrap}
+.dposter{flex:0 0 220px;height:310px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:3rem}
+.dinfo{flex:1 1 280px;min-width:0}
+.dinfo h1{margin:0 0 4px;font-size:1.6rem}
+.share{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0}
+.share a,.share button{padding:5px 12px;border-radius:8px;border:1px solid var(--line);background:var(--chip);text-decoration:none;color:var(--ink);font-size:.84rem}
+h2.sec{font-size:1.15rem;margin:26px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--acc)}
+.tabp{display:inline-block;padding:6px 14px;border-radius:8px 8px 0 0;background:var(--acc);color:var(--accInk);font-size:.9rem}
+.eps{display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:0 12px 12px 12px}
+.epb{padding:6px 12px;border-radius:8px;background:var(--chip);color:var(--ink);text-decoration:none;font-size:.86rem;border:1px solid var(--line)}
+a.epb:hover{background:var(--acc);color:var(--accInk)}
+.epb.off{opacity:.45;cursor:not-allowed}
+.sched{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:14px}
+.sched td{padding:6px 8px;border-bottom:1px solid var(--line)}
+.sched td:last-child{text-align:right;color:var(--mute)}
+dl.minfo{display:grid;grid-template-columns:130px 1fr;gap:8px 12px;margin:0}
+dl.minfo dt{font-weight:600;color:var(--mute)}
+dl.minfo dd{margin:0}
+dl.minfo a{color:var(--acc);text-decoration:none}
+</style>
+</head>
+<body>
+<header><div class="top">
+  <a class="logo" href="#">A4VFamily<small>Lịch Chiếu Anime Bản Quyền</small></a>
+  <nav><a class="on" href="#">Lịch chiếu</a><a href="#">Mới chiếu</a><a href="#">Tìm Anime</a></nav>
+  <input type="search" id="q" placeholder="Tìm kiếm…" aria-label="Tìm kiếm">
+  <button class="lamp" id="lamp">💡 Đèn</button>
+</div></header>
+
+<main class="wrap" id="list">
+  <div class="season">
+    <button class="arrow" id="prev" aria-label="Mùa trước">‹</button>
+    <div><p id="range"></p><h1 id="name"></h1></div>
+    <button class="arrow" id="next" aria-label="Mùa sau">›</button>
+  </div>
+  <div class="filters">
+    <label>Sắp xếp theo:
+      <select id="sort"><option value="air">Lịch chiếu</option><option value="views">Phổ biến</option><option value="name">Tên Anime</option></select></label>
+    <label>Trạng thái:
+      <select id="status"><option value="">Tất cả</option><option value="air">Đang chiếu</option><option value="done">Đã chiếu</option><option value="soon">Sắp chiếu</option></select></label>
+    <label><input type="checkbox" id="nsfw"> NSFW/R18/Hentai</label>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+<main class="wrap" id="detail" hidden></main>
+<footer><a href="#">Facebook</a> | <a href="#">Discord</a><br>Chi tiết xin liên hệ: email@example.com</footer>
+
+<script src="data.js"></script>
+<script>
+const W=6048e5,VN=252e5;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const p2=n=>String(n).padStart(2,"0");
+const fmt=t=>{const d=new Date(t+VN);return `${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}, ${p2(d.getUTCDate())} Tháng ${p2(d.getUTCMonth()+1)} năm ${d.getUTCFullYear()}`};
+const hue=t=>{let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))%360;return h};
+const ini=t=>t.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
+const bg=(x,h)=>x.img?`background:center/cover url(${esc(x.img)})`:`background:linear-gradient(145deg,hsl(${h} 60% 48%),hsl(${(h+50)%360} 55% 30%))`;
+function info(x,now){
+  const f=Date.parse(x.first),a=now<f?0:Math.min(x.eps,Math.floor((now-f)/W)+1);
+  return{a,f,next:a<x.eps?f+a*W:null,st:a===0?"soon":a>=x.eps?"done":"air"};
+}
+const _d=new Date(),_cur=["winter","spring","summer","fall"][Math.floor(_d.getUTCMonth()/3)]+"-"+_d.getUTCFullYear();
+let si=SEASONS.findIndex(s=>s.k===_cur);if(si<0)si=SEASONS.length-1;
+function render(){
+  const now=Date.now(),se=SEASONS[si],q=$("#q").value.trim().toLowerCase();
+  $("#name").textContent=se.n;$("#range").textContent=se.r;
+  $("#prev").disabled=si===0;$("#next").disabled=si===SEASONS.length-1;
+  let L=SHOWS.filter(x=>x.s===se.k).map(x=>({x,i:info(x,now)}));
+  if(!$("#nsfw").checked)L=L.filter(o=>!o.x.nsfw);
+  const stf=$("#status").value;if(stf)L=L.filter(o=>o.i.st===stf);
+  if(q)L=L.filter(o=>(o.x.t+" "+o.x.alt).toLowerCase().includes(q));
+  const so=$("#sort").value;
+  L.sort(so==="name"?(a,b)=>a.x.t.localeCompare(b.x.t,"vi"):so==="views"?(a,b)=>b.x.v-a.x.v:(a,b)=>(a.i.next??9e15)-(b.i.next??9e15));
+  $("#count").textContent=L.length+" anime";
+  const lab={air:"Đang chiếu",done:"Đã chiếu",soon:"Sắp chiếu"};
+  $("#grid").innerHTML=L.length?L.map(({x,i})=>{
+    const h=hue(x.t);
+    
+    
+    return `<article class="card"><div class="poster" style="${bg(x,h)}">${x.img?"":esc(ini(x.t))}</div><div class="body"><span class="st ${i.st}">${lab[i.st]}</span><h3 class="t"><a href="#phim-${x.id}">${esc(x.t)}</a></h3><p class="alt"><b>Tên khác:</b> ${esc(x.alt)}</p><a class="plat" href="#phim-${x.id}">${esc(x.p.n)} · Xem chi tiết</a><div class="tags"><span class="sub">${esc(x.lang)}</span><span>${esc(x.f)}</span>${x.g.map(g=>`<span>${esc(g)}</span>`).join("")}</div></div></article>`;
+  }).join(""):`<div class="empty">Không có anime nào phù hợp.</div>`;
+}
+$("#prev").onclick=()=>{si--;render()};$("#next").onclick=()=>{si++;render()};
+["#sort","#status","#nsfw"].forEach(s=>$(s).onchange=render);$("#q").oninput=render;
+$("#lamp").onclick=()=>{const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;r.dataset.theme=dark?"light":"dark"};
+SHOWS.forEach((x,n)=>x.id=x.id||n+1);
+function detail(x){
+  const now=Date.now(),i=info(x,now),h=hue(x.t),se=SEASONS.find(s=>s.k===x.s),u=encodeURIComponent(location.href),et=n=>i.f+n*W;
+  const stat=i.a?`Tập ${i.a} đã được chiếu vào <b>${fmt(et(i.a-1))}</b>`:`Tập 1 sẽ chiếu vào <b>${fmt(i.f)}</b>`;
+  const nxt=i.next&&i.a?`<br>Tập ${i.a+1} sẽ chiếu vào ${fmt(i.next)}`:(i.a>=x.eps?" · Đã chiếu hết":"");
+  const N=[...Array(x.eps).keys()];
+  const eps=N.map(n=>n<i.a?`<a class="epb" href="${esc(x.p.u)}" target="_blank" rel="noopener" title="${fmt(et(n))}">Tập ${p2(n+1)}</a>`:`<span class="epb off" title="Chiếu: ${fmt(et(n))}">Tập ${p2(n+1)}</span>`).join("");
+  const rows=N.map(n=>`<tr><td>Tập ${p2(n+1)}</td><td>${n<i.a?"Đã chiếu":"Sắp chiếu"}</td><td>${fmt(et(n))}</td></tr>`).join("");
+  $("#detail").innerHTML=`<a class="back" href="#lich-chieu">‹ Quay lại phía trước</a><div class="dhead"><div class="dposter" style="${bg(x,h)}">${x.img?"":esc(ini(x.t))}</div><div class="dinfo"><span class="st ${i.st}">${{air:"Đang chiếu",done:"Đã chiếu",soon:"Sắp chiếu"}[i.st]}</span><h1>${esc(x.t)}</h1><p class="alt">${esc(x.alt)}</p><div class="share"><strong>Chia sẻ phim này</strong><a href="https://www.facebook.com/sharer.php?u=${u}" target="_blank" rel="noopener">Facebook</a><a href="https://twitter.com/share?url=${u}&text=${encodeURIComponent(x.t)}" target="_blank" rel="noopener">Twitter</a><button id="cp">Sao chép link</button><a href="${esc(x.mal||"#")}" target="_blank" rel="noopener">Myanimelist</a></div><p class="ep">${stat}${nxt}</p></div></div><h2 class="sec">Xem</h2><span class="tabp">${esc(x.p.n)}</span><div class="eps">${eps}</div><table class="sched">${rows}</table><h2 class="sec">Tổng quan</h2><dl class="minfo"><dt>Tên Romaji:</dt><dd>${esc(x.alt)}</dd><dt>Số tập:</dt><dd>${x.eps}</dd><dt>Mùa chiếu:</dt><dd><a href="#lich-chieu" data-s="${SEASONS.indexOf(se)}">${esc(se.n)}</a></dd><dt>Bản quyền:</dt><dd>${esc(x.p.n)}</dd><dt>Thể loại:</dt><dd><div class="tags"><span class="sub">${esc(x.lang)}</span><span>${esc(x.f)}</span>${x.g.map(g=>`<span>${esc(g)}</span>`).join("")}</div></dd><dt>Độ phổ biến:</dt><dd>${x.v.toLocaleString("vi-VN")}</dd></dl>`;
+  document.title=x.t+" – A4VFamily";
+  $("#cp").onclick=async e=>{try{await navigator.clipboard.writeText(location.href);e.target.textContent="Đã sao chép"}catch(_){e.target.textContent="Không sao chép được"}};
+}
+function route(){
+  const m=/^#phim-(\d+)$/.exec(location.hash),x=m&&SHOWS.find(s=>s.id===+m[1]);
+  $("#list").hidden=!!x;$("#detail").hidden=!x;
+  if(x){detail(x);scrollTo(0,0)}else{document.title="A4VFamily – Lịch chiếu Anime Vietsub bản quyền (prototype)";render()}
+}
+$("#detail").onclick=e=>{const a=e.target.closest("[data-s]");if(a)si=+a.dataset.s};
+addEventListener("hashchange",route);
+route();
+</script>
+</body>
+</html>
