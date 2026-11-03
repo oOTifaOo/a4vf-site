@@ -98,14 +98,14 @@ function subtitleTabs(groups, active) {
 
 function platformTabs(platforms, selected) {
   if (platforms.length < 2) {
-    return html`<h2 id="watch-title">${icon('live_tv')}${platforms[0].name}</h2>`;
+    return html`<h2 id="watch-title">${icon('live_tv')}${platforms[0].name}${platforms[0].isFree ? ' · Free' : ''}</h2>`;
   }
   return html`
     <h2 class="visually-hidden" id="watch-title">Xem</h2>
     <div class="platform-tabs" role="group" aria-labelledby="watch-title">
       ${platforms.map((platform, index) => html`
         <button class="btn btn-sm platform-tab" type="button" data-platform="${index}"
-          aria-pressed="${index === selected}">${platform.name}</button>`)}
+          aria-pressed="${index === selected}">${platform.name}${platform.isFree ? ' · Free' : ''}</button>`)}
     </div>`;
 }
 

@@ -1,7 +1,7 @@
 /* "Lịch chiếu": các tập trong hôm nay và lịch cả tuần. */
 
 import { emptyState, followButton, icon, poster } from '../components/common.js';
-import { bindFilters, languageFilter, mineToggle } from '../components/filters.js';
+import { bindFilters, freeToggle, languageFilter, mineToggle } from '../components/filters.js';
 import { platformMarks } from '../components/platform-logo.js';
 import { WEEK_ORDER, WEEKDAYS, WEEKDAYS_SHORT } from '../config.js';
 import { isFollowing } from '../domain/follow.js';
@@ -79,6 +79,7 @@ export function mountHome(root, { catalog, state }) {
     <h1 class="page-title" tabindex="-1">Lịch chiếu anime Vietsub bản quyền</h1>
     <form class="filter-bar" id="home-filters">
       ${languageFilter(filters.language)}
+      ${freeToggle(filters.free)}
       ${mineToggle(filters.mine)}
     </form>
     <section aria-labelledby="today-title">

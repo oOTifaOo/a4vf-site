@@ -1,7 +1,7 @@
 /* "Danh sách theo mùa": toàn bộ phim của một mùa, có sắp xếp và lọc. */
 
 import { emptyState, icon, menuButton } from '../components/common.js';
-import { bindFilters, describeLanguage, languageFilter, mineToggle } from '../components/filters.js';
+import { bindFilters, describeLanguage, freeToggle, languageFilter, mineToggle } from '../components/filters.js';
 import { SHOW_GRID_CLASS, showGrid } from '../components/show-card.js';
 import { SEASON_ICONS, SORTS } from '../config.js';
 import { loadSeasonIfArchived } from '../domain/archive.js';
@@ -69,6 +69,7 @@ export function mountSeasonList(root, { catalog, state }) {
       ${seasonHeader(catalog.seasons, index)}
       <form class="filter-bar" id="list-filters">
         ${languageFilter(filters.language)}
+        ${freeToggle(filters.free)}
         ${sortMenu(filters.sort)}
         ${mineToggle(filters.mine)}
         <div class="input-group filter-bar__search">
@@ -90,7 +91,7 @@ export function mountSeasonList(root, { catalog, state }) {
   function refresh() {
     const now = Date.now();
     const shows = selectSeasonShows(catalog.shows, filters, now);
-    const parts = [`${shows.length} anime`, describeLanguage(filters.language), filters.mine && 'Phim của tôi'];
+    const parts = [`${shows.length} anime`, describeLanguage(filters.language), filters.free && 'Free', filters.mine && 'Phim của tôi'];
     count.textContent = parts.filter(Boolean).join(' · ');
 
     mount(grid, shows.length
