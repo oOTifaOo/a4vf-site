@@ -1991,6 +1991,11 @@ time,
   text-align: center;
 }
 
+.about-partners li:not(:has(img)) span {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
 .about-partners img {
   max-width: 100%;
   max-height: 4.5rem;
