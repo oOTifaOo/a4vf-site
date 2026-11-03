@@ -4,7 +4,7 @@
 // Cần: npm i --no-save playwright && npx playwright install chromium
 // Chạy: node scripts/build.mjs
 import { spawn } from "node:child_process";
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
@@ -118,6 +118,17 @@ async function capture(paths) {
   return pages;
 }
 
+/** Trình duyệt lưu từng file js. Gắn phiên bản vào mọi import để không lẫn file cũ với file mới sau mỗi lần deploy. */
+async function versionImports(version) {
+  const dir = join(dist, "js");
+  const files = (await readdir(dir, { recursive: true })).filter((file) => file.endsWith(".js"));
+  await Promise.all(files.map(async (file) => {
+    const path = join(dir, file);
+    const code = await readFile(path, "utf8");
+    await writeFile(path, code.replace(/(from\s+')(\.{1,2}\/[^']+\.js)(')/g, `$1$2?v=${version}$3`));
+  }));
+}
+
 async function main() {
   const catalog = await loadCatalog();
   await rm(dist, { recursive: true, force: true });
@@ -130,6 +141,7 @@ async function main() {
   // Khi đã dựng bản tĩnh, data.js nằm ngay trên website nên không cần đọc từ GitHub Pages nữa.
   const config = await readFile(join(dist, "js/config.js"), "utf8");
   await writeFile(join(dist, "js/config.js"), config.replace(/REMOTE_DATA_URL = '[^']*'/, "REMOTE_DATA_URL = ''"));
+  await versionImports(version);
   const key = (await readFile(join(root, "deploy/indexnow-key.txt"), "utf8")).trim();
   await writeFile(join(dist, `${key}.txt`), key);
   await writeFile(join(dist, ".nojekyll"), "");
