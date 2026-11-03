@@ -100,3 +100,15 @@ Khi `REPORT_ENDPOINT` còn trống, web thật tự ẩn nút báo lỗi và m�
 6. Gửi thử một báo lỗi trên web và xem dòng mới trong tab Báo lỗi.
 
 Khi sửa script: Deploy -> Manage deployments -> Edit -> Version: New version. Làm vậy đường dẫn `/exec` không đổi. Nếu sửa danh sách loại lỗi, hãy sửa cả `REPORT_FORMS` trong `js/config.js` và `BL_SOURCES` trong script.
+
+## Anime cũ và khi sang mùa mới
+
+- Không xóa dòng và không chuyển tab. Mọi phim nằm trong `Sheet1`.
+- Khi dựng web, `scripts/build.mjs` tự tách: `data.js` giữ 4 mùa gần nhất, mùa sắp tới và phim còn đang chiếu. Phim cũ hơn vào `kho.json` (tìm kiếm) và `du-lieu/mua-*.json` (trang phim, trang mùa). Đổi số mùa ở `RECENT_SEASONS`.
+- Thêm anime cũ: tick ô `them` trong tab **Kho AniList**, chọn menu **Kho AniList > Thêm phim đã tick vào tab chính**. Dòng mới vào `Sheet1` với chữ `x` ở cột `an`, nên chưa lên web. Điền `nen_tang`, `link_xem`, rồi xóa chữ `x`.
+- Cột `hoan_tat`: script tự điền `x` khi phim đã chiếu xong và đủ link, `capNhatLinkTap` sẽ bỏ qua dòng này. Muốn quét lại thì xóa chữ `x`.
+- Cột `het_ban_quyen`: điền `x` khi nền tảng đã gỡ phim. Hết sạch nơi xem thì trang phim vẫn còn và ghi "Hiện chưa có nơi xem bản quyền tại Việt Nam".
+
+## Apps Script
+
+Toàn bộ nằm trong `Code.gs` của dự án Dichmota, một lịch duy nhất `chayHangNgay` khoảng 22:00 mỗi ngày. Hàm này chạy: cập nhật tab AniList_mua, dịch mô tả, đánh dấu hoàn tất, cập nhật link tập; thứ Hai thêm phim mới vào Kho AniList. Đổi giờ: sửa `TD_GIO` rồi chạy `datLichHangNgay` một lần. Bản trong thư mục `apps-script/` chỉ để tham khảo.
