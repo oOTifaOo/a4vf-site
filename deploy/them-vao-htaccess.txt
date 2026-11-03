@@ -1,0 +1,34 @@
+# BEGIN A4VFamily
+# Dùng khi website nằm trên host (LiteSpeed/Apache). Dán vào đầu file .htaccess trong public_html.
+ErrorDocument 404 /404.html
+<IfModule mod_rewrite.c>
+RewriteEngine On
+# Một địa chỉ duy nhất: https, không www
+RewriteCond %{HTTPS} off [OR]
+RewriteCond %{HTTP_HOST} ^www\. [NC]
+RewriteRule ^(.*)$ https://a4vf.net/$1 [R=301,L]
+# /index.html và /phim/x.html về đường dẫn sạch
+RewriteCond %{THE_REQUEST} \s/+index\.html[\s?]
+RewriteRule ^ / [R=301,L]
+RewriteCond %{THE_REQUEST} \s/+(.+)\.html[\s?]
+RewriteRule ^ /%1 [R=301,L]
+# Bỏ dấu / ở cuối
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+)/$ /$1 [R=301,L]
+# /phim/x đọc file /phim/x.html
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.+)$ $1.html [L]
+</IfModule>
+<IfModule mod_deflate.c>
+AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/xml image/svg+xml
+</IfModule>
+<IfModule mod_expires.c>
+ExpiresActive On
+ExpiresByType text/html "access plus 0 seconds"
+ExpiresByType application/xml "access plus 1 hour"
+ExpiresByType text/css "access plus 1 week"
+ExpiresByType text/javascript "access plus 1 hour"
+ExpiresByType image/png "access plus 1 month"
+ExpiresByType image/webp "access plus 1 month"
+</IfModule>
+# END A4VFamily
