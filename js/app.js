@@ -26,8 +26,8 @@ const outlet = document.querySelector('#main');
 
 /** Bộ lọc được giữ khi chuyển trang, nhưng không giữ khi tải lại. */
 const state = {
-  home: { language: 'vi', mine: false },
-  list: { language: 'all', mine: false, sort: 'views', seasonKey: '', query: '' },
+  home: { language: 'vi', free: false, mine: false },
+  list: { language: 'all', free: false, mine: false, sort: 'views', seasonKey: '', query: '' },
   search: { query: '', genre: '' },
 };
 

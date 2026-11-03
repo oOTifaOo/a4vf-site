@@ -72,10 +72,8 @@ export const STATUS = {
 };
 
 export const LANGUAGES = [
-  { value: 'all', label: 'Tất cả phụ đề', icon: 'apps' },
-  { value: 'vi', label: 'Vietsub', icon: 'subtitles' },
-  { value: 'en', label: 'Engsub', icon: 'language' },
-  { value: 'dub', label: 'Lồng tiếng', icon: 'record_voice_over' },
+  { value: 'all', label: 'Tất cả', icon: 'video_library' },
+  { value: 'vi', label: 'Vietsub', icon: 'closed_caption' },
 ];
 
 export const SORTS = [
