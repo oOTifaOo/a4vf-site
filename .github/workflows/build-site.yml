@@ -1,0 +1,79 @@
+# Dựng bản tĩnh sau mỗi lần cập nhật dữ liệu rồi đưa lên website.
+# Không đụng tới update.yml. Chọn nơi deploy bằng biến DEPLOY_TARGET trong
+# Settings -> Secrets and variables -> Actions -> Variables: "pages" hoặc "ftp".
+name: Dựng website
+on:
+  workflow_run:
+    workflows: ["Cập nhật lịch chiếu"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ["js/**", "css/**", "index.html", "sw.js", "manifest.webmanifest", "scripts/**", "logos/**", "images/**", "robots.txt"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: build-site
+  cancel-in-progress: true
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm i --no-save playwright && npx playwright install --with-deps chromium
+      - run: node scripts/build.mjs
+      - name: Giữ sitemap cũ để biết trang nào đổi
+        run: curl -fsSL https://a4vf.net/sitemap.xml -o old-sitemap.xml || touch old-sitemap.xml
+      - name: Lấy manifest đang chạy để biết file nào đổi
+        run: curl -fsSL https://a4vf.net/deploy-manifest.json -o old-manifest.json || echo '{}' > old-manifest.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: old-sitemap
+          path: old-sitemap.xml
+      - if: vars.DEPLOY_TARGET == 'pages'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - if: vars.DEPLOY_TARGET == 'ftp'
+        name: Đưa lên host bằng FTP
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          sudo apt-get install -y -qq lftp
+          OLD_MANIFEST=old-manifest.json node scripts/upload-list.mjs > upload.lftp
+          lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST" -e "set ssl:verify-certificate no; source upload.lftp; quit"
+      - if: vars.DEPLOY_TARGET == 'ftp'
+        run: OLD_SITEMAP=old-sitemap.xml node scripts/indexnow.mjs || true
+  deploy-pages:
+    needs: build
+    if: vars.DEPLOY_TARGET == 'pages'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: old-sitemap
+      - name: Báo trang mới cho IndexNow
+        run: |
+          mkdir -p dist
+          curl -fsSL https://a4vf.net/sitemap.xml -o dist/sitemap.xml
+          OLD_SITEMAP=old-sitemap.xml node scripts/indexnow.mjs || true
