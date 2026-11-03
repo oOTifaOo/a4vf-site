@@ -20,6 +20,7 @@ function normalizePlatform(raw) {
     hasDub: Boolean(raw.dub),
     firstAiredAt: raw.first,
     episodeLinks: raw.e ?? {},
+    episodeOffset: raw.o ?? 0,
     milestones: raw.m ?? {},
   };
 }
@@ -44,9 +45,11 @@ function normalizeShow(raw, index) {
     season: raw.s,
     title: raw.t,
     altTitle: raw.alt,
+    englishTitle: raw.en ?? '',
     searchText: [raw.t, raw.en, raw.alt].filter(Boolean).join(' '),
     firstAiredAt: platforms[0].firstAiredAt || raw.first,
     episodes: raw.eps,
+    episodesUnknown: Boolean(raw.eu),
     popularity: raw.v,
     genres: raw.g,
     format: raw.f,
@@ -87,15 +90,16 @@ function loadScript(src) {
 /** Trên website lấy data.js từ GitHub Pages; chạy thử trên máy hoặc khi lỗi thì dùng file cạnh index.html. */
 async function loadDataFile() {
   const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+  const version = `?v=${Math.floor(Date.now() / DATA_REFRESH_MS)}`;
   if (REMOTE_DATA_URL && !isLocal) {
     try {
-      await loadScript(`${REMOTE_DATA_URL}?v=${Math.floor(Date.now() / DATA_REFRESH_MS)}`);
+      await loadScript(`${REMOTE_DATA_URL}${version}`);
       return;
     } catch {
       console.warn('Không tải được data.js từ GitHub Pages, dùng bản trên host.');
     }
   }
-  await loadScript('data.js');
+  await loadScript(`/data.js${version}`);
 }
 
 /** Tải data.js rồi đọc SEASONS và SHOWS do file đó tạo ra. */
@@ -105,8 +109,14 @@ export async function loadCatalog() {
   if (typeof SEASONS === 'undefined' || typeof SHOWS === 'undefined') {
     throw new Error('data.js chưa tải được');
   }
-  return { seasons: SEASONS.map(normalizeSeason), shows: SHOWS.map(normalizeShow) };
+  return normalizeCatalog(SEASONS, SHOWS);
 }
+
+/** Dùng chung cho website và scripts/build.mjs. */
+export const normalizeCatalog = (seasons, shows) => ({
+  seasons: seasons.map(normalizeSeason),
+  shows: shows.map(normalizeShow),
+});
 
 /** Mùa hiện tại nếu có phim, nếu không thì mùa gần nhất có phim. */
 export function defaultSeason({ seasons, shows }, now) {

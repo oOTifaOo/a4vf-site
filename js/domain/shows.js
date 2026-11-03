@@ -1,7 +1,8 @@
 /* Quy tắc nghiệp vụ, không đụng tới DOM nên dễ kiểm thử và dùng lại. */
 
 import { UPCOMING_WINDOW_DAYS } from '../config.js';
-import { DAY_MS, WEEK_MS, weekdayOf } from '../lib/time.js';
+import { normalizeText } from '../lib/text.js';
+import { DAY_MS, todayStart, WEEK_MS, weekdayOf } from '../lib/time.js';
 import { isFollowing } from './follow.js';
 
 /**
@@ -38,15 +39,6 @@ function matchesFilters(show, { language, mine }) {
   return !show.nsfw
     && (!mine || isFollowing(show.id))
     && (language === 'all' || show.filterLanguages.some((item) => languageKind(item) === language));
-}
-
-/** Viết thường, bỏ dấu tiếng Việt, để "kiem si" tìm được "Kiếm Sĩ". */
-export function normalizeText(text) {
-  return text
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/đ/gi, 'd')
-    .toLowerCase();
 }
 
 const nextAiring = (show, now) => airingOf(show, now).next ?? Infinity;
@@ -88,7 +80,8 @@ export const airWeekday = (show) => weekdayOf(firstAirTime(show));
 
 /** Phim hiện ở Lịch chiếu: đang chiếu, hoặc sắp chiếu trong vài ngày tới. Sắp theo giờ trong ngày. */
 export function selectWeekShows(shows, filters, now) {
-  const clockOf = (show) => (firstAirTime(show) + 7 * 36e5) % DAY_MS;
+  // Tính từ đầu ngày phát sóng, để phim 24:30 đứng sau phim 23:00.
+  const clockOf = (show) => firstAirTime(show) - todayStart(firstAirTime(show));
   return shows
     .filter((show) => matchesFilters(show, filters))
     .map((show) => ({ show, airing: airingOf(show, now) }))
@@ -98,13 +91,26 @@ export function selectWeekShows(shows, filters, now) {
     .sort((a, b) => clockOf(a.show) - clockOf(b.show));
 }
 
-/** Tập nên hiện cho hôm nay: tập vừa chiếu trong 24 giờ qua, nếu không thì tập kế tiếp. */
-export function todayEpisode(show, airing, now) {
-  const lastTime = airing.aired ? airing.timeOf(airing.aired) : 0;
-  const justAired = Boolean(lastTime) && now - lastTime < DAY_MS;
-  return {
-    justAired,
-    time: justAired ? lastTime : airing.next ?? lastTime,
-    episode: justAired ? airing.aired : Math.min(show.episodes, airing.aired + 1),
-  };
+/** Số tập hiện cho người xem. Playlist đánh số nối tiếp mùa trước thì khớp với số trên YouTube. */
+export const episodeNumber = (platform, episode) => episode + platform.episodeOffset;
+
+/** Các tập chiếu trong "hôm nay", kể cả tập cuối của phim vừa kết thúc. */
+export function selectTodayEpisodes(shows, filters, now) {
+  const start = todayStart(now);
+  const end = start + DAY_MS;
+  return shows
+    .filter((show) => matchesFilters(show, filters))
+    .flatMap((show) => {
+      const airing = airingOf(show, now);
+      // Một ngày có thể chiếu nhiều tập nên xét cả các tập quanh tập vừa chiếu.
+      const first = Math.max(1, airing.aired - 3);
+      const last = Math.min(show.episodes, airing.aired + 4);
+      const episodes = [];
+      for (let episode = first; episode <= last; episode += 1) {
+        const time = airing.timeOf(episode);
+        if (time >= start && time < end) episodes.push({ show, episode, time });
+      }
+      return episodes;
+    })
+    .sort((a, b) => a.time - b.time);
 }
