@@ -3,54 +3,104 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="claude:viewport-fit-sides" content="cover">
-  <title>A4VFamily</title>
-  <meta name="referrer" content="no-referrer">
-  <meta name="description" content="Lịch chiếu Anime Vietsub bản quyền tại Việt Nam.">
+  <title>Lịch chiếu anime Vietsub bản quyền hôm nay | A4VFamily</title>
+  <meta name="description" content="Lịch chiếu anime Vietsub và lồng tiếng bản quyền tại Việt Nam, cập nhật theo tuần và theo mùa trên Ani-One, Muse, FPT Play, Netflix.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="theme-color" content="#2e4fa0">
+  <link rel="canonical" href="https://a4vf.net/">
 
-  <script src="js/theme-init.js"></script>
+  <meta property="og:site_name" content="A4VFamily">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Lịch chiếu anime Vietsub bản quyền hôm nay | A4VFamily">
+  <meta property="og:description" content="Lịch chiếu anime Vietsub và lồng tiếng bản quyền tại Việt Nam, cập nhật theo tuần và theo mùa trên Ani-One, Muse, FPT Play, Netflix.">
+  <meta property="og:url" content="https://a4vf.net/">
+  <meta property="og:image" content="https://a4vf.net/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
 
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" type="image/png" href="/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://a4vf.net/#website",
+        "url": "https://a4vf.net/",
+        "name": "A4VFamily",
+        "inLanguage": "vi",
+        "publisher": { "@id": "https://a4vf.net/#organization" }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://a4vf.net/#organization",
+        "name": "A4VFamily",
+        "url": "https://a4vf.net/",
+        "logo": "https://a4vf.net/icon-512.png",
+        "email": "a4vtranslation@gmail.com",
+        "sameAs": ["https://www.facebook.com/a4vfamily"]
+      }
+    ]
+  }
+  </script>
+
+  <script src="/js/theme-init.js"></script>
+
+  <link rel="preconnect" href="https://s4.anilist.co" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cal+Sans&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&family=Cal+Sans&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&display=block">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-  <link rel="stylesheet" href="css/tokens.css">
-  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="/css/tokens.css?v=20261103k">
+  <link rel="stylesheet" href="/css/app.css?v=20261103k">
 
   <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="/js/app.js?v=20261103k"></script>
 </head>
 <body>
   <a class="skip-link visually-hidden-focusable" href="#main" data-skip-link>Đến nội dung chính</a>
 
   <header class="site-header">
     <div class="container site-header__bar">
-      <a class="brand" href="#trang-chu" aria-label="A4VFamily, về trang lịch chiếu">A4VFamily<small>Lịch Chiếu Anime Bản Quyền</small></a>
+      <a class="brand" href="/" aria-label="A4VFamily, về trang lịch chiếu">A4VFamily<small>Lịch Chiếu Anime Bản Quyền</small></a>
 
       <nav class="primary-nav" aria-label="Điều hướng chính">
         <ul class="primary-nav__list">
           <li>
-            <a class="primary-nav__link" href="#trang-chu" data-nav="trang-chu">
-              <span class="material-symbols-rounded icon" aria-hidden="true">calendar_month</span>Lịch chiếu
+            <a class="primary-nav__link" href="/" data-nav="trang-chu">
+              <span class="material-symbols-rounded icon" data-icon="calendar_month" aria-hidden="true"></span>Lịch chiếu
             </a>
           </li>
           <li>
-            <a class="primary-nav__link" href="#lich-chieu" data-nav="lich-chieu">
-              <span class="material-symbols-rounded icon" aria-hidden="true">view_list</span>Theo mùa
+            <a class="primary-nav__link" href="/theo-mua" data-nav="lich-chieu">
+              <span class="material-symbols-rounded icon" data-icon="view_list" aria-hidden="true"></span>Theo mùa
             </a>
           </li>
           <li>
-            <a class="primary-nav__link" href="#tim-anime" data-nav="tim-anime">
-              <span class="material-symbols-rounded icon" aria-hidden="true">search</span>Tìm Anime
+            <a class="primary-nav__link" href="/tim-anime" data-nav="tim-anime">
+              <span class="material-symbols-rounded icon" data-icon="search" aria-hidden="true"></span>Tìm Anime
             </a>
           </li>
         </ul>
       </nav>
 
-      <button class="btn btn-icon" type="button" id="theme-toggle" aria-label="Đổi nền sáng hoặc tối" data-bs-title="Đổi nền sáng/tối">
-        <span class="material-symbols-rounded icon" aria-hidden="true">contrast</span>
-      </button>
+      <div class="dropdown site-menu">
+        <button class="btn btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Mở menu">
+          <span class="btn-icon__face" data-bs-title="Menu"><span class="material-symbols-rounded icon" data-icon="menu" aria-hidden="true"></span></span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" href="/gioi-thieu" data-nav="gioi-thieu"><span class="material-symbols-rounded icon" data-icon="groups" aria-hidden="true"></span>Giới thiệu</a></li>
+          <li data-report-entry hidden><button class="dropdown-item" type="button" data-report="site"><span class="material-symbols-rounded icon" data-icon="markunread_mailbox" aria-hidden="true"></span>Hòm thư góp ý</button></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><button class="dropdown-item" type="button" id="theme-toggle"><span class="material-symbols-rounded icon" data-icon="contrast" aria-hidden="true"></span><span id="theme-toggle-label">Đổi nền sáng/tối</span></button></li>
+        </ul>
+      </div>
     </div>
   </header>
 
@@ -58,14 +108,26 @@
     <div class="empty-state">
       <div class="spinner-border" role="status"><span class="visually-hidden">Đang tải…</span></div>
     </div>
-    <noscript><p class="text-center">Trang này cần JavaScript để hiển thị lịch chiếu.</p></noscript>
+    <noscript><p class="text-center">Hãy bật JavaScript để xem lịch chiếu anime.</p></noscript>
   </main>
 
   <footer class="site-footer">
     <div class="container">
+      <p class="site-footer__about">A4VFamily tổng hợp lịch chiếu anime Vietsub và lồng tiếng bản quyền tại Việt Nam, kèm giờ chiếu và link xem trên các nền tảng chính thức.</p>
       <ul class="site-footer__list">
-        <li><span class="material-symbols-rounded icon" aria-hidden="true">public</span><a href="https://www.facebook.com/a4vfamily" target="_blank" rel="noopener">Facebook</a></li>
-        <li><span class="material-symbols-rounded icon" aria-hidden="true">mail</span><span class="user-select-all">a4vtranslation@gmail.com</span></li>
+        <li><a href="/">Lịch chiếu hôm nay</a></li>
+        <li><a href="/theo-mua">Anime theo mùa</a></li>
+        <li><a href="/tim-anime">Tìm anime</a></li>
+        <li><a href="/nen-tang/muse-viet-nam">Muse Việt Nam</a></li>
+        <li><a href="/nen-tang/ani-one-viet-nam">Ani-One Việt Nam</a></li>
+        <li><a href="/nen-tang/netflix">Netflix</a></li>
+        <li><a href="/nen-tang/fpt-play">FPT Play</a></li>
+        <li><a href="/nen-tang/crunchyroll">Crunchyroll</a></li>
+        <li><a href="/nen-tang/iq">iQIYI</a></li>
+        <li><a href="/gioi-thieu">Giới thiệu</a></li>
+        <li data-report-entry hidden><span class="material-symbols-rounded icon" data-icon="markunread_mailbox" aria-hidden="true"></span><button class="site-footer__link" type="button" data-report="site">Hòm thư góp ý</button></li>
+        <li><span class="material-symbols-rounded icon" data-icon="public" aria-hidden="true"></span><a href="https://www.facebook.com/a4vfamily" target="_blank" rel="noopener">Facebook</a></li>
+        <li><span class="material-symbols-rounded icon" data-icon="mail" aria-hidden="true"></span><span class="user-select-all">a4vtranslation@gmail.com</span></li>
       </ul>
     </div>
   </footer>

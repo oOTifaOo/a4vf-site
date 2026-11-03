@@ -39,10 +39,28 @@ Mỗi nền tảng là **một dòng** trong Sheet, lặp lại cùng `anilist_i
 - Cả phim lệch đều đặn (ví dụ chiếu chậm 1 ngày): điền `gio_tap1_vn` của tập 1 trên dòng nền tảng đó. Để trống thì dùng giờ AniList.
 - Lịch bị hoãn giữa chừng: điền `gio_cac_tap`, ví dụ `4|2026-11-05 19:00` nghĩa là từ tập 4 chiếu lúc đó, các tập sau tính tiếp mỗi tuần.
 
+## Đường dẫn và SEO
+- `js/lib/paths.js` quy định đường dẫn, `js/domain/seo.js` quy định tiêu đề, mô tả và dữ liệu có cấu trúc của từng trang.
+- Thêm đường dẫn mới thì sửa cả `deploy/them-vao-htaccess.txt` và `appRoute` trong `scripts/serve.mjs`.
+- `scripts/update.mjs` tạo `sitemap.xml`. Chỉ phim có bản tiếng Việt mới vào sitemap, phim chỉ có Engsub để noindex (xem `hasVietnameseRelease`).
+
+## Kho toàn bộ anime của AniList
+`apps-script/kho-anilist.gs` đưa toàn bộ anime của AniList vào tab `Kho AniList`. Tab này không lên website.
+
+1. Dán file vào cùng dự án Apps Script rồi chạy `layKhoAniList` một lần. Script tự chạy tiếp từng đợt tới khi xong. Xong thì chạy `taoLichCapNhatKho` một lần để mỗi tuần tự thêm phim mới.
+2. Tick cột `them` ở những phim cần dùng rồi chạy `themPhimDaChon`. Phim được thêm vào `Sheet1` với chữ `x` ở cột `an`, nên chưa lên web.
+3. Ở `Sheet1`, điền `nen_tang`, `link_xem`, các cột khác nếu cần, rồi xóa chữ `x`.
+
 ## Tự điền link từng tập
 Dán link playlist YouTube vào cột `link_xem`, script `apps-script/link-tap.gs` (chạy trong Google Sheet) tự tìm video, đọc số tập từ tiêu đề và điền vào cột `link_cac_tap` mỗi ngày. Script chỉ bổ sung tập còn thiếu nên link bạn sửa tay được giữ nguyên. Tập nào chưa có link riêng thì nút tập dùng link chung ở `link_xem`.
 
+Website chỉ phát được trên trang khi có link từng tập, vì một số playlist không nhúng được. Dòng mới dán vào Sheet cần chạy `capNhatLinkTap` một lần, hoặc đợi lịch 7 giờ sáng. Không có khóa API thì RSS chỉ lấy 15 video mới nhất mỗi playlist.
+
+Nếu playlist đánh số nối tiếp mùa trước (mùa 2 bắt đầu từ Tập 14), website hiện đúng số như YouTube. `scripts/update.mjs` tự nhận ra khi số tập lớn hơn tổng số tập của phim. Có thể điền cột `lech_tap`, ví dụ `13`, để chỉ định rõ.
+
 FPT Play không cần `link_cac_tap`: `scripts/update.mjs` tự tạo link từng tập bằng cách thêm `/tap-<số tập>` vào link ở `link_xem`. Tập nào bạn điền tay trong `link_cac_tap` thì dùng link đó.
+
+Netflix cũng vậy nếu `link_xem` là link xem **tập 1** dạng `https://www.netflix.com/watch/83050561`: tập 2 là số cuối + 1, tập 3 là + 2... Link dạng `/title/` không tạo được link từng tập. Nếu số tập trên Netflix không liền nhau, điền tập đó vào `link_cac_tap`.
 
 Tập có link video YouTube riêng trong `link_cac_tap` sẽ phát ngay trên trang phim. Link playlist hoặc link kênh không nhúng được theo từng tập nên vẫn mở sang YouTube. Nếu chủ video tắt nhúng, người xem bấm nút "Mở trên YouTube" dưới khung phát.
 

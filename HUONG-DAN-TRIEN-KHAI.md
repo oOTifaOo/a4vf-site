@@ -75,3 +75,28 @@ Repo GitHub phải ở chế độ **Public**.
 - **Poster không hiện:** ảnh lấy từ AniList; kiểm tra mạng, thử tải lại. Nếu bị chặn hàng loạt, báo lại để chuyển sang lưu poster trên host.
 - **Logo hiện hình tròn chữ viết tắt:** tên file chưa khớp với tên nền tảng trong Sheet (xem `logos/README.txt`).
 - **Giao diện cũ sau khi cập nhật:** xóa cache trình duyệt (Ctrl+F5). File `.htaccess` đã đặt cache ngắn cho `data.js`.
+
+## Cập nhật SEO (bản tĩnh, đường dẫn thật)
+Web chuyển từ `#phim-123` sang trang thật như `/phim/123-ten-phim`, `/mua/thu-2026`, `/nen-tang/netflix`. Mỗi lần dữ liệu đổi, GitHub Actions dựng lại toàn bộ trang HTML rồi đưa lên host, nên công cụ tìm kiếm đọc được nội dung mà không cần chạy JavaScript. Link `#...` cũ tự chuyển sang link mới.
+
+1. **Sao lưu:** tải về máy `.htaccess`, `index.html` và hai thư mục `js`, `css` trong `public_html`.
+2. **GitHub:** vào Settings -> Secrets and variables -> Actions. Tab Secrets: thêm `FTP_HOST`, `FTP_USER`, `FTP_PASS`. Tab Variables: thêm `DEPLOY_TARGET` với giá trị `ftp`. Làm bước này trước khi tải code lên.
+3. **Host:** dán nội dung `deploy/them-vao-htaccess.txt` lên đầu `.htaccess` trong `public_html` (chưa có thì tạo mới).
+4. **GitHub:** tải toàn bộ nội dung `a4vf-seo-github.zip` lên repo, gồm cả `.github/workflows/build-site.yml`. Workflow "Dựng website" sẽ tự chạy; nếu không, vào Actions và bấm Run workflow. Nếu lỗi ở bước FTP, kiểm tra lại secret và đường dẫn `public_html/` trong workflow.
+5. Kiểm tra `https://a4vf.net/robots.txt`, `https://a4vf.net/sitemap.xml`, `https://a4vf.net/mua/thu-2026` và một trang phim. Xem nguồn trang (Ctrl+U) phải thấy tên phim trong HTML.
+6. Khai báo sitemap với Google Search Console và Bing Webmaster Tools. Brave không có công cụ quản trị, gửi trang chủ tại `search.brave.com/submit-url`.
+
+Quay lại bản cũ: xóa khối `# BEGIN A4VFamily` trong `.htaccess`, tắt workflow "Dựng website", rồi tải lại bản `index.html` và thư mục `js`, `css` đã sao lưu.
+
+## Bật Báo lỗi và Hòm thư góp ý
+
+Khi `REPORT_ENDPOINT` còn trống, web thật tự ẩn nút báo lỗi và mục Hòm thư góp ý, nên có thể deploy trước rồi bật sau.
+
+1. Tạo một Google Sheet **mới**, không dùng file Datasheet.
+2. Trong file đó, chọn Extensions -> Apps Script, xóa code mẫu, dán toàn bộ `apps-script/bao-loi.gs`, bấm Lưu.
+3. Chọn hàm `blChuanBi`, bấm Run, cấp quyền. Sheet sẽ có tab **Báo lỗi**.
+4. Chọn Deploy -> New deployment -> Web app. Execute as: **Me**. Who has access: **Anyone**. Bấm Deploy, sao chép đường dẫn kết thúc bằng `/exec`.
+5. Dán đường dẫn vào `REPORT_ENDPOINT` trong `js/config.js`, rồi deploy website.
+6. Gửi thử một báo lỗi trên web và xem dòng mới trong tab Báo lỗi.
+
+Khi sửa script: Deploy -> Manage deployments -> Edit -> Version: New version. Làm vậy đường dẫn `/exec` không đổi. Nếu sửa danh sách loại lỗi, hãy sửa cả `REPORT_FORMS` trong `js/config.js` và `BL_SOURCES` trong script.
