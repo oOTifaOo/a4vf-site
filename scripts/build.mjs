@@ -168,30 +168,25 @@ async function capture(paths) {
   return pages;
 }
 
-/** Trình duyệt lưu từng file js. Gắn phiên bản vào mọi import để không lẫn file cũ với file mới sau mỗi lần deploy. */
-async function versionImports(version) {
-  const dir = join(dist, "js");
-  const files = (await readdir(dir, { recursive: true })).filter((file) => file.endsWith(".js"));
-  await Promise.all(files.map(async (file) => {
-    const path = join(dir, file);
-    const code = await readFile(path, "utf8");
-    await writeFile(path, code.replace(/(from\s+')(\.{1,2}\/[^']+\.js)(')/g, `$1$2?v=${version}$3`));
-  }));
-}
-
 async function main() {
   const catalog = await loadCatalog();
   await rm(dist, { recursive: true, force: true });
   await mkdir(dist, { recursive: true });
   const version = await codeVersion();
-  const template = (await readFile(join(root, "index.html"), "utf8")).replace(/\?v=[^"]+/g, `?v=${version}`);
+  // css và js nằm trong thư mục riêng của từng phiên bản. Khi tải lên host, file mới không đè file cũ,
+  // nên trang cũ vẫn chạy trọn vẹn và mỗi trang chỉ đổi sang phiên bản mới khi HTML của nó được thay.
+  const assets = `v/${version}`;
+  const template = (await readFile(join(root, "index.html"), "utf8"))
+    .replace(/"\/(css|js)\/(tokens\.css|app\.css|app\.js)\?v=[^"]+"/g, `"/${assets}/$1/$2"`);
 
-  await Promise.all(["css", "js", "logos", "images"].map((dir) => cp(join(root, dir), join(dist, dir), { recursive: true })));
+  await Promise.all(["logos", "images"].map((dir) => cp(join(root, dir), join(dist, dir), { recursive: true })));
+  await Promise.all(["css", "js"].map((dir) => cp(join(root, dir), join(dist, assets, dir), { recursive: true })));
+  await mkdir(join(dist, "js"), { recursive: true });
+  await cp(join(root, "js/theme-init.js"), join(dist, "js/theme-init.js"));
   await Promise.all(STATIC_FILES.map((file) => cp(join(root, file), join(dist, file))));
   // Khi đã dựng bản tĩnh, data.js nằm ngay trên website nên không cần đọc từ GitHub Pages nữa.
-  const config = await readFile(join(dist, "js/config.js"), "utf8");
-  await writeFile(join(dist, "js/config.js"), config.replace(/REMOTE_DATA_URL = '[^']*'/, "REMOTE_DATA_URL = ''"));
-  await versionImports(version);
+  const config = await readFile(join(dist, assets, "js/config.js"), "utf8");
+  await writeFile(join(dist, assets, "js/config.js"), config.replace(/REMOTE_DATA_URL = '[^']*'/, "REMOTE_DATA_URL = ''"));
   await writeFile(join(dist, "sw.js"), (await readFile(join(root, "sw.js"), "utf8")).replace("__VERSION__", version));
   await writeData(catalog);
   const key = (await readFile(join(root, "deploy/indexnow-key.txt"), "utf8")).trim();
