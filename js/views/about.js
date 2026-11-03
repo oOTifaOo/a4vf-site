@@ -88,7 +88,7 @@ const partners = (items) => html`
     <ul class="about-partners list-unstyled">
       ${items.map((item) => html`
         <li>
-          <img src="${IMAGE_ROOT}/doi-tac-${item.file}.webp" alt="Logo ${item.name}" loading="lazy" decoding="async">
+          ${item.file ? html`<img src="${IMAGE_ROOT}/doi-tac-${item.file}.webp" alt="Logo ${item.name}" loading="lazy" decoding="async">` : ''}
           <span>${item.name}</span>
         </li>`)}
     </ul>
