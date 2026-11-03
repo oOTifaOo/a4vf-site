@@ -31,7 +31,7 @@ export const ABOUT_PAGE = {
     { name: 'Medialink (Ani-One)', file: 'ani-one' },
     { name: 'Remow', file: 'remow' },
     { name: 'Tropics Entertainment', file: 'tropics' },
-    { name: 'iQIYI', file: 'iqiyi' },
+    { name: 'Aeon Beta' },
   ],
   series: [
     { title: 'Alya Sometimes Hides Her Feelings in Russian', file: 'alya', platforms: 'Crunchyroll, Netflix, YouTube' },
