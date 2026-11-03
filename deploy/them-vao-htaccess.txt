@@ -1,6 +1,7 @@
 # BEGIN A4VFamily
 # Dùng khi website nằm trên host (LiteSpeed/Apache). Dán vào đầu file .htaccess trong public_html.
 ErrorDocument 404 /404.html
+AddType application/manifest+json .webmanifest
 <IfModule mod_rewrite.c>
 RewriteEngine On
 # Một địa chỉ duy nhất: https, không www
