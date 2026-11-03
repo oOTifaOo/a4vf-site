@@ -6,6 +6,7 @@ import { SHOW_GRID_CLASS, showGrid } from '../components/show-card.js';
 import { SEASON_ICONS, SORTS } from '../config.js';
 import { selectSeasonShows } from '../domain/shows.js';
 import { html, mount } from '../lib/html.js';
+import { PATHS, seasonPath } from '../lib/paths.js';
 
 function seasonStep(season, direction) {
   const name = direction === 'prev' ? 'chevron_left' : 'chevron_right';
@@ -13,7 +14,7 @@ function seasonStep(season, direction) {
   if (!season) {
     return html`<button class="btn btn-icon" type="button" disabled aria-label="${label}">${icon(name)}</button>`;
   }
-  return html`<a class="btn btn-icon" href="#mua-${season.key}" aria-label="${label}: ${season.name}"
+  return html`<a class="btn btn-icon" href="${seasonPath(season.key)}" aria-label="${label}: ${season.name}"
     data-bs-title="${season.name}">${icon(name)}</a>`;
 }
 
@@ -51,7 +52,7 @@ function emptyResult({ mine, query }) {
   if (query.trim()) {
     return html`
       ${emptyState('search_off', 'Không tìm thấy trong mùa này.')}
-      <p class="text-center"><a href="#tim-anime" data-search-all>Tìm trong mọi mùa</a></p>`;
+      <p class="text-center"><a href="${PATHS.search}" data-search-all>Tìm trong mọi mùa</a></p>`;
   }
   return mine
     ? emptyState('star', 'Bạn chưa theo dõi phim nào. Bấm ngôi sao trên poster để thêm.')
