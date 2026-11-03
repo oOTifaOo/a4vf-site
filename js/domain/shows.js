@@ -34,10 +34,11 @@ export function languageKind(language) {
   return /lồng|long tieng/i.test(language) ? 'dub' : 'vi';
 }
 
-/** Lọc chung: luôn ẩn 18+, rồi áp dụng phụ đề và "Phim của tôi". */
-function matchesFilters(show, { language, mine }) {
+/** Lọc chung: luôn ẩn 18+, rồi áp dụng phụ đề, Free và "Phim của tôi". */
+function matchesFilters(show, { language, free, mine }) {
   return !show.nsfw
     && (!mine || isFollowing(show.id))
+    && (!free || show.isFree)
     && (language === 'all' || show.filterLanguages.some((item) => languageKind(item) === language));
 }
 
@@ -57,9 +58,9 @@ const matchesQuery = (show, query) => {
   return !needle || normalizeText(show.searchText).includes(needle);
 };
 
-export function selectSeasonShows(shows, { seasonKey, sort, language, mine, query }, now) {
+export function selectSeasonShows(shows, { seasonKey, sort, language, free, mine, query }, now) {
   const list = shows.filter((show) =>
-    show.season === seasonKey && matchesFilters(show, { language, mine }) && matchesQuery(show, query));
+    show.season === seasonKey && matchesFilters(show, { language, free, mine }) && matchesQuery(show, query));
   return sortShows(list, mine ? 'air' : sort, now);
 }
 
