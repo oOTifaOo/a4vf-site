@@ -2,6 +2,7 @@
 
 import { emptyState } from './components/common.js';
 import { PLATFORM_PAGES } from './config.js';
+import { loadArchivedShow } from './domain/archive.js';
 import { defaultSeason, loadCatalog } from './domain/catalog.js';
 import { isFollowing } from './domain/follow.js';
 import { aboutSeo, homeSeo, mineSeo, notFoundSeo, platformSeo, searchSeo, seasonSeo, showSeo } from './domain/seo.js';
@@ -9,6 +10,7 @@ import { html, mount } from './lib/html.js';
 import { hasVietnameseRelease, legacyHashPath, PATHS, seasonKeyFromSlug, showPath } from './lib/paths.js';
 import { initPageActions } from './ui/feedback.js';
 import { initImageFallbacks } from './ui/images.js';
+import { initInstall } from './ui/install.js';
 import { initReports } from './ui/report.js';
 import { applySeo } from './ui/seo.js';
 import { initThemeToggle } from './ui/theme.js';
@@ -52,8 +54,16 @@ function mountNotFound() {
   return null;
 }
 
+/** Phim cũ chưa có trong data.js: giữ nội dung dựng sẵn, tải dữ liệu mùa đó rồi vẽ lại. */
+const archiveChecked = new Set();
+
 function renderShow(id) {
   const show = catalog.shows.find((item) => item.id === id);
+  if (!show && !archiveChecked.has(id)) {
+    archiveChecked.add(id);
+    loadArchivedShow(catalog, id).finally(route);
+    return null;
+  }
   // Tên phim đổi thì đường dẫn đổi theo, đường dẫn cũ tự chuyển sang đường dẫn đúng.
   if (show) history.replaceState(null, '', showPath(show.id, show.title));
   return mountDetail(outlet, { catalog, showId: id, backPath });
@@ -61,7 +71,7 @@ function renderShow(id) {
 
 function showPageSeo(id) {
   const show = catalog.shows.find((item) => item.id === id);
-  if (!show) return notFoundSeo(location.pathname);
+  if (!show) return archiveChecked.has(id) ? notFoundSeo(location.pathname) : null;
   return showSeo(show, catalog.seasons.find((season) => season.key === show.season));
 }
 
@@ -154,7 +164,8 @@ function route() {
   clearTooltips();
   try {
     activeView = entry.render(match) ?? null;
-    applySeo(entry.seo(match));
+    const seo = entry.seo(match);
+    if (seo) applySeo(seo);
   } catch (error) {
     activeView = null;
     showRenderError(error);
@@ -210,6 +221,7 @@ async function start() {
   initTooltips();
   initImageFallbacks();
   initPageActions({ onFollowChange });
+  initInstall();
   initReports({ findShow: (id) => catalog?.shows.find((show) => show.id === id) ?? null });
 
   try {
