@@ -53,6 +53,7 @@ export function showCard(show, now, { showCountdown = false } = {}) {
           ${episodeProgress(show, airing)}
           <div class="platform-logos">${show.platforms.map(platformLogo)}</div>
           <ul class="chip-list show-card__tags">
+            ${show.isFree ? html`<li class="chip chip--free">Free</li>` : ''}
             ${show.languages.map(languageChip)}
             ${show.genres.map(chip)}
           </ul>
