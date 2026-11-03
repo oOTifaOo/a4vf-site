@@ -17,7 +17,7 @@ function tryNextLogo(image) {
     return;
   }
   image.dataset.logoAttempt = attempt;
-  image.src = `logos/${image.dataset.logoSlug}.${LOGO_EXTENSIONS[attempt]}`;
+  image.src = `/logos/${image.dataset.logoSlug}.${LOGO_EXTENSIONS[attempt]}`;
 }
 
 export function initImageFallbacks() {
