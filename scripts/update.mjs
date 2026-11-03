@@ -225,7 +225,12 @@ async function main() {
   const shows = [];
   for (const m of media) {
     const sheetRows = sheet.get(m.id);
-    const rows = sheetRows ? [...sheetRows, ...engsubRows(m, sheetRows)] : [autoRow(m)];
+    // het_ban_quyen: nền tảng đã gỡ phim. Hết sạch nơi xem thì trang phim vẫn còn, chỉ báo chưa có nơi xem.
+    const activeRows = sheetRows?.filter((row) => !row.het_ban_quyen);
+    const gone = Boolean(sheetRows) && !activeRows.length;
+    const rows = gone
+      ? [{ ...sheetRows[0], link_xem: "", link_cac_tap: "" }]
+      : sheetRows ? [...activeRows, ...engsubRows(m, activeRows)] : [autoRow(m)];
     const r = rows[0], aniFirst = firstAirMs(m);
     const ps = rows.map((row) => {
       const gt = vnMs(row.gio_tap1_vn);
@@ -265,6 +270,7 @@ async function main() {
       f: FORMAT[m.format] || m.format || "TV Series",
       ...(trailerOf(m) ? { tr: trailerOf(m) } : {}),
       ...(m.isAdult ? { nsfw: true } : {}),
+      ...(gone ? { gone: 1 } : {}),
       ...(m.coverImage?.large ? { img: m.coverImage.large } : {}),
       ...(m.idMal ? { mal: `https://myanimelist.net/anime/${m.idMal}` } : {}),
       ...officialLinks(m),

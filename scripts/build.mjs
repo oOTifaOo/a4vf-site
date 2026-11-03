@@ -4,8 +4,9 @@
 // Cần: npm i --no-save playwright && npx playwright install chromium
 // Chạy: node scripts/build.mjs
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { chromium } from "playwright";
@@ -18,7 +19,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 const PORT = Number(process.env.BUILD_PORT) || 8199;
 const ORIGIN = `http://localhost:${PORT}`;
-const STATIC_FILES = ["robots.txt", "favicon.ico", "og-image.png", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "data.js"];
+const STATIC_FILES = ["robots.txt", "favicon.ico", "og-image.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "manifest.webmanifest"];
+/** Số mùa gần nhất tính cả mùa hiện tại giữ trong data.js. Phim cũ hơn vào kho tra cứu. */
+const RECENT_SEASONS = 4;
 const now = Date.now();
 const today = new Date(now).toISOString().slice(0, 10);
 
@@ -29,7 +32,54 @@ async function loadCatalog() {
   const context = {};
   vm.createContext(context);
   vm.runInContext(`${await readFile(join(root, "data.js"), "utf8")};this.seasons=SEASONS;this.shows=SHOWS;`, context);
-  return normalizeCatalog(context.seasons, context.shows);
+  return { ...normalizeCatalog(context.seasons, context.shows), rawSeasons: context.seasons, rawShows: context.shows };
+}
+
+const SEASON_FAMILIES = ["winter", "spring", "summer", "fall"];
+const seasonIndex = (key) => {
+  const [family, year] = key.split("-");
+  return Number(year) * 4 + SEASON_FAMILIES.indexOf(family);
+};
+
+/** data.js chỉ giữ mùa gần đây và phim còn đang chiếu; phim cũ tách thành chỉ mục và từng file theo mùa. */
+async function writeData({ rawSeasons, rawShows, shows }) {
+  const date = new Date(now);
+  const cutoff = date.getUTCFullYear() * 4 + Math.floor(date.getUTCMonth() / 3) - RECENT_SEASONS + 1;
+  const isRecent = (raw, index) => seasonIndex(raw.s) >= cutoff || airingOf(shows[index], now).status !== "done";
+  const recent = rawShows.filter(isRecent);
+  const older = rawShows.filter((raw, index) => !isRecent(raw, index) && !raw.nsfw);
+
+  await writeFile(join(dist, "data.js"), `/* Tạo tự động. */\nconst SEASONS=${JSON.stringify(rawSeasons)};\nconst SHOWS=${JSON.stringify(recent)};\n`);
+  await writeFile(join(dist, "kho.json"), JSON.stringify(older.map((raw) => ({
+    id: raw.id, s: raw.s, t: raw.t, ...(raw.en ? { en: raw.en } : {}), alt: raw.alt, ...(raw.img ? { img: raw.img } : {}), g: raw.g,
+    p: [...new Set(raw.ps.filter((platform) => !/eng/i.test(platform.lang)).map((platform) => platform.n))],
+  }))));
+  await mkdir(join(dist, "du-lieu"), { recursive: true });
+  for (const key of new Set(older.map((raw) => raw.s))) {
+    await writeFile(join(dist, "du-lieu", `mua-${key}.json`), JSON.stringify(older.filter((raw) => raw.s === key)));
+  }
+  console.log(`data.js: ${recent.length} phim; kho tra cứu: ${older.length} phim.`);
+}
+
+const sha = (data) => createHash("sha256").update(data).digest("hex");
+
+/** Phiên bản theo nội dung css và js, để lần dựng chỉ đổi dữ liệu không làm đổi mọi trang. */
+async function codeVersion() {
+  const parts = await Promise.all(["css", "js"].map(async (dir) => {
+    const files = (await readdir(join(root, dir), { recursive: true })).filter((file) => /\.(css|js)$/.test(file)).sort();
+    return Promise.all(files.map((file) => readFile(join(root, dir, file))));
+  }));
+  return sha(Buffer.concat(parts.flat())).slice(0, 8);
+}
+
+async function writeManifest() {
+  const entries = await readdir(dist, { recursive: true, withFileTypes: true });
+  const files = entries.filter((entry) => entry.isFile())
+    .map((entry) => relative(dist, join(entry.parentPath, entry.name)).split(sep).join("/"))
+    .filter((file) => ![".nojekyll", "CNAME", "deploy-manifest.json"].includes(file));
+  const manifest = {};
+  for (const file of files.sort()) manifest[file] = sha(await readFile(join(dist, file))).slice(0, 16);
+  await writeFile(join(dist, "deploy-manifest.json"), JSON.stringify(manifest));
 }
 
 const isIndexable = (show) => hasVietnameseRelease(show.filterLanguages, show.nsfw);
@@ -133,7 +183,7 @@ async function main() {
   const catalog = await loadCatalog();
   await rm(dist, { recursive: true, force: true });
   await mkdir(dist, { recursive: true });
-  const version = (process.env.GITHUB_SHA || String(now)).slice(0, 8);
+  const version = await codeVersion();
   const template = (await readFile(join(root, "index.html"), "utf8")).replace(/\?v=[^"]+/g, `?v=${version}`);
 
   await Promise.all(["css", "js", "logos", "images"].map((dir) => cp(join(root, dir), join(dist, dir), { recursive: true })));
@@ -142,6 +192,8 @@ async function main() {
   const config = await readFile(join(dist, "js/config.js"), "utf8");
   await writeFile(join(dist, "js/config.js"), config.replace(/REMOTE_DATA_URL = '[^']*'/, "REMOTE_DATA_URL = ''"));
   await versionImports(version);
+  await writeFile(join(dist, "sw.js"), (await readFile(join(root, "sw.js"), "utf8")).replace("__VERSION__", version));
+  await writeData(catalog);
   const key = (await readFile(join(root, "deploy/indexnow-key.txt"), "utf8")).trim();
   await writeFile(join(dist, `${key}.txt`), key);
   await writeFile(join(dist, ".nojekyll"), "");
@@ -164,6 +216,7 @@ async function main() {
     await mkdir(dirname(file), { recursive: true });
     await writeFile(file, setMain(head, seo.main));
   }
+  await writeManifest();
   console.log(`Đã dựng ${pages.length} trang, trong đó ${catalog.shows.filter(isIndexable).length} trang phim đưa vào sitemap.`);
 }
 

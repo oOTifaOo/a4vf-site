@@ -15,7 +15,7 @@ const types = {
   ".svg": "image/svg+xml", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8",
 };
 // Chỉ phục vụ các file của website, không lộ script, file cấu hình, link Sheet...
-const rootFiles = ["index.html", "data.js", "robots.txt", "favicon.ico", "og-image.png", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "sitemap.xml"];
+const rootFiles = ["index.html", "data.js", "robots.txt", "favicon.ico", "og-image.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "sitemap.xml", "manifest.webmanifest", "sw.js"];
 const allowed = (p) => rootFiles.includes(p) || ["logos", "images", "css", "js"].some((d) => p.startsWith(d + sep));
 // Giống rewrite trên host: các đường dẫn trang đều trả về index.html
 const appRoute = /^\/(phim\/\d+(-[a-z0-9-]*)?|mua\/[a-z]+-\d{4}|nen-tang\/[a-z0-9-]+|theo-mua|tim-anime|phim-cua-toi|gioi-thieu)\/?$/;
