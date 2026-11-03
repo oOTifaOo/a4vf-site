@@ -1,16 +1,22 @@
-/* Điểm khởi động: đọc dữ liệu rồi nối mỗi đường dẫn #... với một view. */
+/* Điểm khởi động: đọc dữ liệu rồi nối mỗi đường dẫn với một view. */
 
 import { emptyState } from './components/common.js';
-import { SITE_NAME } from './config.js';
+import { PLATFORM_PAGES } from './config.js';
 import { defaultSeason, loadCatalog } from './domain/catalog.js';
 import { isFollowing } from './domain/follow.js';
-import { mount } from './lib/html.js';
+import { aboutSeo, homeSeo, mineSeo, notFoundSeo, platformSeo, searchSeo, seasonSeo, showSeo } from './domain/seo.js';
+import { html, mount } from './lib/html.js';
+import { hasVietnameseRelease, legacyHashPath, PATHS, seasonKeyFromSlug, showPath } from './lib/paths.js';
 import { initPageActions } from './ui/feedback.js';
 import { initImageFallbacks } from './ui/images.js';
+import { initReports } from './ui/report.js';
+import { applySeo } from './ui/seo.js';
 import { initThemeToggle } from './ui/theme.js';
 import { clearTooltips, initTooltips } from './ui/tooltips.js';
+import { mountAbout } from './views/about.js';
 import { mountDetail } from './views/detail.js';
 import { mountHome } from './views/home.js';
+import { mountPlatform, platformShows } from './views/platform.js';
 import { mountSearch } from './views/search.js';
 import { mountSeasonList } from './views/season-list.js';
 
@@ -25,54 +31,106 @@ const state = {
 
 let catalog;
 let activeView = null;
-let backHash = '#lich-chieu';
+let backPath = PATHS.seasons;
 let firstRoute = true;
 
 const context = () => ({ catalog, state });
 
-/** Thêm trang: thêm một dòng ở đây, một file trong js/views và một link trong index.html. */
+function currentSeasonSeo() {
+  const season = catalog.seasons.find(({ key }) => key === state.list.seasonKey) ?? catalog.seasons[0];
+  const shows = catalog.shows.filter((show) => show.season === season.key && !show.nsfw);
+  return seasonSeo(season, shows.length, shows.filter((show) => hasVietnameseRelease(show.filterLanguages, show.nsfw)));
+}
+
+const platformOf = (slug) => PLATFORM_PAGES.find((platform) => platform.slug === slug);
+
+function mountNotFound() {
+  mount(outlet, html`
+    <h1 class="visually-hidden" tabindex="-1">Không tìm thấy trang</h1>
+    ${emptyState('search_off', 'Trang này không tồn tại hoặc đã được chuyển đi.')}
+    <p class="text-center"><a href="${PATHS.home}">Về lịch chiếu hôm nay</a></p>`);
+  return null;
+}
+
+function renderShow(id) {
+  const show = catalog.shows.find((item) => item.id === id);
+  // Tên phim đổi thì đường dẫn đổi theo, đường dẫn cũ tự chuyển sang đường dẫn đúng.
+  if (show) history.replaceState(null, '', showPath(show.id, show.title));
+  return mountDetail(outlet, { catalog, showId: id, backPath });
+}
+
+function showPageSeo(id) {
+  const show = catalog.shows.find((item) => item.id === id);
+  if (!show) return notFoundSeo(location.pathname);
+  return showSeo(show, catalog.seasons.find((season) => season.key === show.season));
+}
+
+/** Thêm trang: thêm một dòng ở đây, một file trong js/views, một link trong index.html và một đường dẫn trong js/lib/paths.js. */
 const ROUTES = [
   {
-    pattern: /^#mua-([a-z0-9-]+)$/,
+    pattern: /^\/nen-tang\/([a-z0-9-]+)$/,
+    nav: null,
+    seo: ([, slug]) => {
+      const platform = platformOf(slug);
+      return platform ? platformSeo(platform, platformShows(catalog, platform)) : notFoundSeo(location.pathname);
+    },
+    render: ([, slug]) => (platformOf(slug) ? mountPlatform(outlet, context(), platformOf(slug)) : mountNotFound()),
+  },
+  {
+    pattern: /^\/gioi-thieu$/,
+    nav: 'gioi-thieu',
+    seo: aboutSeo,
+    render: () => mountAbout(outlet),
+  },
+  {
+    pattern: /^\/mua\/([a-z]+-\d{4})$/,
     nav: 'lich-chieu',
-    title: 'Danh sách theo mùa',
-    render: ([, key]) => {
+    seo: currentSeasonSeo,
+    render: ([, slug]) => {
+      const key = seasonKeyFromSlug(slug);
       if (catalog.seasons.some((season) => season.key === key)) state.list.seasonKey = key;
       return mountSeasonList(outlet, context());
     },
   },
   {
-    pattern: /^#(lich-chieu|danh-sach)$/,
+    pattern: /^\/theo-mua$/,
     nav: 'lich-chieu',
-    title: 'Danh sách theo mùa',
+    seo: currentSeasonSeo,
     render: () => mountSeasonList(outlet, context()),
   },
   {
-    pattern: /^#phim-cua-toi$/,
+    pattern: /^\/phim-cua-toi$/,
     nav: 'lich-chieu',
-    title: 'Phim của tôi',
+    seo: mineSeo,
     render: () => {
       state.list.mine = true;
       return mountSeasonList(outlet, context());
     },
   },
   {
-    pattern: /^#tim-anime$/,
+    pattern: /^\/tim-anime$/,
     nav: 'tim-anime',
-    title: 'Tìm Anime',
     focus: '#search-query',
+    seo: searchSeo,
     render: () => mountSearch(outlet, context()),
   },
   {
-    pattern: /^#phim-(\d+)$/,
+    pattern: /^\/phim\/(\d+)(?:-[a-z0-9-]*)?$/,
     nav: null,
-    render: ([, id]) => mountDetail(outlet, { catalog, showId: Number(id), backHash }),
+    seo: ([, id]) => showPageSeo(Number(id)),
+    render: ([, id]) => renderShow(Number(id)),
+  },
+  {
+    pattern: /^\/(index\.html)?$/,
+    nav: 'trang-chu',
+    seo: homeSeo,
+    render: () => mountHome(outlet, context()),
   },
   {
     pattern: /.*/,
-    nav: 'trang-chu',
-    title: 'Lịch chiếu',
-    render: () => mountHome(outlet, context()),
+    nav: null,
+    seo: () => notFoundSeo(location.pathname),
+    render: () => mountNotFound(),
   },
 ];
 
@@ -89,22 +147,22 @@ function showRenderError(error) {
 }
 
 function route() {
-  const { hash } = location;
-  const entry = ROUTES.find(({ pattern }) => pattern.test(hash));
+  const path = location.pathname.replace(/\/+$/, '').replace(/\.html$/, '') || PATHS.home;
+  const entry = ROUTES.find(({ pattern }) => pattern.test(path));
+  const match = path.match(entry.pattern);
 
   clearTooltips();
   try {
-    activeView = entry.render(hash.match(entry.pattern)) ?? null;
+    activeView = entry.render(match) ?? null;
+    applySeo(entry.seo(match));
   } catch (error) {
     activeView = null;
     showRenderError(error);
     return;
   }
 
-  const pageTitle = activeView?.title ?? entry.title;
-  document.title = pageTitle ? `${pageTitle} – ${SITE_NAME}` : SITE_NAME;
   markActiveNav(entry.nav);
-  if (entry.nav) backHash = hash || '#trang-chu';
+  if (entry.nav) backPath = path;
 
   // Lần tải đầu giữ nguyên; các lần sau đưa focus tới trang mới.
   if (!firstRoute) {
@@ -112,6 +170,29 @@ function route() {
     outlet.querySelector(entry.focus ?? 'h1')?.focus({ preventScroll: true });
   }
   firstRoute = false;
+}
+
+function navigate(path) {
+  if (path !== location.pathname) history.pushState(null, '', path);
+  route();
+}
+
+/** Link nội bộ đổi trang ngay, không tải lại. Ctrl+bấm vẫn mở tab mới như link thường. */
+function initInternalLinks() {
+  document.addEventListener('click', (event) => {
+    if (event.defaultPrevented || event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    const link = event.target.closest('a[href^="/"]:not([href^="//"])');
+    if (!link || link.target) return;
+    event.preventDefault();
+    navigate(link.getAttribute('href'));
+  });
+}
+
+/** Link dạng #... của bản cũ được đổi sang đường dẫn mới. Trả về true nếu đã đổi. */
+function redirectLegacyHash() {
+  const path = legacyHashPath(location.hash);
+  if (path) history.replaceState(null, '', path);
+  return Boolean(path);
 }
 
 function onFollowChange(id) {
@@ -129,6 +210,7 @@ async function start() {
   initTooltips();
   initImageFallbacks();
   initPageActions({ onFollowChange });
+  initReports({ findShow: (id) => catalog?.shows.find((show) => show.id === id) ?? null });
 
   try {
     catalog = await loadCatalog();
@@ -139,7 +221,16 @@ async function start() {
   }
 
   state.list.seasonKey = defaultSeason(catalog, Date.now())?.key ?? '';
-  addEventListener('hashchange', route);
+  redirectLegacyHash();
+  // Đổi #... trên trang đang mở cũng phát popstate, và phát trước hashchange.
+  addEventListener('popstate', () => {
+    redirectLegacyHash();
+    route();
+  });
+  addEventListener('hashchange', () => {
+    if (redirectLegacyHash()) route();
+  });
+  initInternalLinks();
   route();
 }
 
