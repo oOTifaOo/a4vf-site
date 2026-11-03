@@ -23,6 +23,7 @@
   --status-done: #5a6579;
 
   --lang-vi: #1a6fc2;
+  --danger: #b3261e;
   --lang-en: #c93030;
   --lang-dub: #1f8048;
 
@@ -53,6 +54,7 @@
     --on-accent: #ffffff;
     --accent-soft: #24425c;
     --accent-text: #7cc2f2;
+    --danger: #ff9c94;
     --star: #ffc53d;
     --status-air: #4fd1a1;
     --status-soon: #8ab4ff;
@@ -76,6 +78,7 @@
   --on-accent: #ffffff;
   --accent-soft: #24425c;
   --accent-text: #7cc2f2;
+  --danger: #ff9c94;
   --star: #ffc53d;
   --status-air: #4fd1a1;
   --status-soon: #8ab4ff;
@@ -120,4 +123,26 @@
 .toast {
   --bs-toast-bg: var(--surface);
   --bs-toast-border-color: var(--line);
+}
+
+/* Bảng màu trang Giới thiệu, lấy từ hồ sơ năng lực của nhóm. */
+:root {
+  --about-sky: #2f80e2;
+  --about-sky-deep: #1275d7;
+  --about-sky-soft: #bbcbff;
+  --about-yellow: #ffdb4f;
+  --about-pink: #ff5ad9;
+  --about-lime: #b8ff73;
+  --about-ink: #111a33;
+  --about-edge: #111a33;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --about-edge: #6f9eea;
+  }
+}
+
+:root[data-theme="dark"] {
+  --about-edge: #6f9eea;
 }
