@@ -61,6 +61,18 @@ function parseEps(text) {
   return e;
 }
 
+// Playlist đánh số nối tiếp mùa trước: link_cac_tap có "29|..." dù phim chỉ có 10 tập.
+// Đưa về tập 1, 2... để tính lịch, và giữ lại số lệch để website hiện đúng số như YouTube.
+// Không điền lech_tap thì lấy theo số tập nhỏ nhất trong link_cac_tap.
+function alignEpisodes(links, count, lech) {
+  const keys = Object.keys(links).map(Number);
+  if (!keys.length || Math.max(...keys) <= count) return { links, offset: lech };
+  const offset = lech || Math.min(...keys) - 1;
+  const aligned = {};
+  for (const key of keys) if (key > offset) aligned[key - offset] = links[key];
+  return { links: aligned, offset };
+}
+
 // FPT Play: link từng tập = link phim + /tap-<số tập>
 function fptEpisodes(url, episodes) {
   const base = /^https?:\/\/(?:www\.)?fptplay\.vn\/xem-video\/[^/?#]+/i.exec(url)?.[0];
@@ -222,7 +234,8 @@ async function main() {
       if (!first) return null;
       // Link điền tay trong link_cac_tap được ưu tiên hơn link tự tạo
       const link = cleanUrl(row.link_xem), count = m.episodes || 12;
-      const e = { ...fptEpisodes(link, count), ...netflixEpisodes(link, count), ...parseEps(row.link_cac_tap) };
+      const manual = alignEpisodes(parseEps(row.link_cac_tap), count, Number(row.lech_tap) || 0);
+      const e = { ...fptEpisodes(link, count), ...netflixEpisodes(link, count), ...manual.links };
       const ms = parseMilestones(row.gio_cac_tap);
       return {
         n: row.nen_tang || "Chưa rõ",
@@ -231,6 +244,7 @@ async function main() {
         ...(YES.test(String(row.long_tieng || "").trim()) ? { dub: true } : {}),
         first: isoZ(first),
         ...(Object.keys(e).length ? { e } : {}),
+        ...(manual.offset ? { o: manual.offset } : {}),
         ...(Object.keys(ms).length ? { m: ms } : {}),
       };
     }).filter(Boolean);
@@ -243,6 +257,7 @@ async function main() {
       ...(m.title.english ? { en: m.title.english } : {}),
       first: ps[0].first,
       eps: m.episodes || 12,
+      ...(m.episodes ? {} : { eu: 1 }), // AniList chưa có tổng số tập
       v: m.popularity || 0,
       g: m.genres || [],
       ps,

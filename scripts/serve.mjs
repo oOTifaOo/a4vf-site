@@ -15,12 +15,16 @@ const types = {
   ".svg": "image/svg+xml", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8",
 };
 // Chỉ phục vụ các file của website, không lộ script, file cấu hình, link Sheet...
-const allowed = (p) => p === "index.html" || p === "data.js" || ["logos", "css", "js"].some((d) => p.startsWith(d + sep));
+const rootFiles = ["index.html", "data.js", "robots.txt", "favicon.ico", "og-image.png", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "sitemap.xml"];
+const allowed = (p) => rootFiles.includes(p) || ["logos", "images", "css", "js"].some((d) => p.startsWith(d + sep));
+// Giống rewrite trên host: các đường dẫn trang đều trả về index.html
+const appRoute = /^\/(phim\/\d+(-[a-z0-9-]*)?|mua\/[a-z]+-\d{4}|nen-tang\/[a-z0-9-]+|theo-mua|tim-anime|phim-cua-toi|gioi-thieu)\/?$/;
 
 http.createServer(async (req, res) => {
   try {
     let rel = decodeURIComponent(new URL(req.url, "http://x").pathname);
-    if (rel.endsWith("/")) rel += "index.html";
+    if (rel.endsWith("/") && !appRoute.test(rel)) rel += "index.html";
+    if (appRoute.test(rel)) rel = "/index.html";
     const file = normalize(join(root, rel));
     const sub = file.slice(root.length + 1);
     if (!file.startsWith(root + sep) || !allowed(sub)) { res.writeHead(404); return res.end("404"); }
@@ -37,7 +41,7 @@ http.createServer(async (req, res) => {
   const url = `http://localhost:${port}`;
   console.log(`Đang chạy tại ${url}  (nhấn Ctrl+C để dừng)`);
   const open = process.platform === "win32" ? `start "" "${url}"` : process.platform === "darwin" ? `open "${url}"` : `xdg-open "${url}"`;
-  exec(open, () => {});
+  if (!process.env.NO_OPEN) exec(open, () => {});
 }).on("error", (e) => {
   console.error(e.code === "EADDRINUSE" ? `Cổng ${port} đang được dùng. Thử: node scripts/serve.mjs 8081` : e.message);
   process.exit(1);
