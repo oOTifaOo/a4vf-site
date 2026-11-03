@@ -1,6 +1,7 @@
 /* Điểm khởi động: đọc dữ liệu rồi nối mỗi đường dẫn với một view. */
 
 import { emptyState } from './components/common.js';
+import { notFoundPage } from './components/not-found.js';
 import { PLATFORM_PAGES } from './config.js';
 import { loadArchivedShow } from './domain/archive.js';
 import { defaultSeason, loadCatalog } from './domain/catalog.js';
@@ -47,10 +48,7 @@ function currentSeasonSeo() {
 const platformOf = (slug) => PLATFORM_PAGES.find((platform) => platform.slug === slug);
 
 function mountNotFound() {
-  mount(outlet, html`
-    <h1 class="visually-hidden" tabindex="-1">Không tìm thấy trang</h1>
-    ${emptyState('search_off', 'Trang này không tồn tại hoặc đã được chuyển đi.')}
-    <p class="text-center"><a href="${PATHS.home}">Về lịch chiếu hôm nay</a></p>`);
+  mount(outlet, notFoundPage());
   return null;
 }
 
