@@ -1,8 +1,9 @@
 /* "Tìm Anime": tìm trong mọi mùa theo tên (có dấu hay không dấu đều được) và thể loại. */
 
 import { emptyState, icon } from '../components/common.js';
-import { SHOW_GRID_CLASS, showGrid } from '../components/show-card.js';
-import { allGenres, searchShows } from '../domain/shows.js';
+import { archiveCard, SHOW_GRID_CLASS, showGrid } from '../components/show-card.js';
+import { loadArchiveIndex } from '../domain/archive.js';
+import { allGenres, searchArchive, searchShows } from '../domain/shows.js';
 import { html, mount } from '../lib/html.js';
 
 const genreOption = (genre, id, checked) => html`
@@ -34,13 +35,15 @@ export function mountSearch(root, { catalog, state }) {
   const form = root.querySelector('#search-form');
   const results = root.querySelector('#search-results');
   const count = root.querySelector('#result-count');
+  let archive = [];
 
   function refresh() {
     const now = Date.now();
     const shows = searchShows(catalog.shows, filters, now);
-    count.textContent = `${shows.length} anime`;
-    mount(results, shows.length
-      ? html`${showGrid(shows, now)}`
+    const older = searchArchive(archive, filters, new Set(catalog.shows.map((show) => show.id)));
+    count.textContent = `${shows.length + older.length} anime`;
+    mount(results, shows.length + older.length
+      ? html`${showGrid(shows, now)}${older.map(archiveCard)}`
       : html`<li class="col-12">${emptyState('search_off', 'Không tìm thấy anime nào. Hãy thử tên khác.')}</li>`);
   }
 
@@ -52,5 +55,9 @@ export function mountSearch(root, { catalog, state }) {
   });
 
   refresh();
+  loadArchiveIndex().then((items) => {
+    archive = items;
+    if (items.length && results.isConnected) refresh();
+  });
   return { refresh };
 }

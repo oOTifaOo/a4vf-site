@@ -340,7 +340,9 @@ export function mountDetail(root, { catalog, showId, backPath }) {
         <p class="detail-facts">${showFacts(show, season, Date.now())}</p>
         ${synopsisBlock(show)}
         <div class="countdown" id="countdown"></div>
-        ${watchSection(show, platform, airing, { groups, group, selected })}
+        ${show.unavailable
+          ? html`<p class="detail-notice">${icon('info')}Hiện chưa có nơi xem bản quyền tại Việt Nam.</p>`
+          : watchSection(show, platform, airing, { groups, group, selected })}
         ${trailerSection(show)}
         ${overview(show, season)}
         ${season ? relatedShows(show, season, catalog.shows) : ''}

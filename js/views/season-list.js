@@ -4,6 +4,7 @@ import { emptyState, icon, menuButton } from '../components/common.js';
 import { bindFilters, describeLanguage, languageFilter, mineToggle } from '../components/filters.js';
 import { SHOW_GRID_CLASS, showGrid } from '../components/show-card.js';
 import { SEASON_ICONS, SORTS } from '../config.js';
+import { loadSeasonIfArchived } from '../domain/archive.js';
 import { selectSeasonShows } from '../domain/shows.js';
 import { html, mount } from '../lib/html.js';
 import { PATHS, seasonPath } from '../lib/paths.js';
@@ -118,5 +119,8 @@ export function mountSeasonList(root, { catalog, state }) {
   });
 
   refresh();
+  loadSeasonIfArchived(catalog, filters.seasonKey).then((added) => {
+    if (added && grid.isConnected) refresh();
+  });
   return { refresh };
 }

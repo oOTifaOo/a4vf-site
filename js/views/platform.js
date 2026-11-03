@@ -1,6 +1,7 @@
 /* Trang từng nền tảng: mọi anime có bản tiếng Việt trên nền tảng đó, mùa mới nhất lên trước. */
 
 import { SHOW_GRID_CLASS, showGrid } from '../components/show-card.js';
+import { loadArchivedPlatforms } from '../domain/archive.js';
 import { html, mount } from '../lib/html.js';
 import { hasVietnameseRelease, seasonPath } from '../lib/paths.js';
 
@@ -9,7 +10,7 @@ export const platformShows = ({ shows }, platform) => shows.filter((show) =>
   hasVietnameseRelease(show.filterLanguages, show.nsfw)
   && show.platforms.some(({ name }) => platform.names.includes(name)));
 
-export function mountPlatform(root, { catalog }, platform) {
+function renderPlatform(root, catalog, platform) {
   const shows = platformShows(catalog, platform);
   const now = Date.now();
   const seasons = [...catalog.seasons].reverse()
@@ -28,5 +29,13 @@ export function mountPlatform(root, { catalog }, platform) {
         </header>
         <ul class="${SHOW_GRID_CLASS}">${showGrid(list, now)}</ul>
       </section>`)}`);
+}
+
+export function mountPlatform(root, { catalog }, platform) {
+  renderPlatform(root, catalog, platform);
+  const heading = root.querySelector('h1');
+  loadArchivedPlatforms(catalog, platform.names).then((added) => {
+    if (added && heading.isConnected) renderPlatform(root, catalog, platform);
+  });
   return null;
 }
