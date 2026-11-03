@@ -155,6 +155,7 @@ function capNhatLinkTap() {
     sh.getRange(1, cTap + 1).setValue(COT_TAP);
   }
   const cLech = header.indexOf(COT_LECH);
+  const cXong = header.indexOf("hoan_tat");
   const rows = sh.getRange(2, 1, lastRow - 1, Math.max(lastCol, cTap + 1)).getValues();
   let them = 0, boQua = 0;
   for (let i = dongDau; i < rows.length; i++) {
@@ -165,6 +166,7 @@ function capNhatLinkTap() {
       return;
     }
     const r = rows[i];
+    if (cXong >= 0 && String(r[cXong]).trim()) continue; // phim đã đủ link, không quét lại
     const id = layPlaylistId(r[cPl]);
     if (!id) continue;
     let videos;
