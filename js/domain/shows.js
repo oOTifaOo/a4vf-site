@@ -70,6 +70,13 @@ export function searchShows(shows, { query, genre }, now) {
   return sortShows(list, 'name', now);
 }
 
+/** Lọc chỉ mục phim cũ theo cùng điều kiện với searchShows. */
+export function searchArchive(items, { query, genre }, knownIds) {
+  return items
+    .filter((item) => !knownIds.has(item.id) && (!genre || item.genres.includes(genre)) && matchesQuery(item, query))
+    .sort((a, b) => a.title.localeCompare(b.title, 'vi'));
+}
+
 export function allGenres(shows) {
   return [...new Set(shows.filter((show) => !show.nsfw).flatMap((show) => show.genres))]
     .sort((a, b) => a.localeCompare(b, 'vi'));

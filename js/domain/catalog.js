@@ -25,7 +25,7 @@ function normalizePlatform(raw) {
   };
 }
 
-function normalizeShow(raw, index) {
+export function normalizeShow(raw, index) {
   const sources = raw.ps ?? [{ n: raw.p.n, u: raw.p.u, lang: raw.lang, e: raw.e, first: raw.first, m: raw.m }];
   const allPlatforms = sources.map(normalizePlatform);
 
@@ -60,6 +60,7 @@ function normalizeShow(raw, index) {
     xUrl: raw.x ?? '',
     trailer: raw.tr ?? null,
     nsfw: Boolean(raw.nsfw),
+    unavailable: Boolean(raw.gone),
     platforms,
     otherPlatforms,
     languages: languagesOf(platforms),
