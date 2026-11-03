@@ -247,6 +247,7 @@ async function main() {
         u: cleanUrl(row.link_xem) || "#",
         lang: row.ngon_ngu || "Vietsub",
         ...(YES.test(String(row.long_tieng || "").trim()) ? { dub: true } : {}),
+        ...(YES.test(String(row.free || "").trim()) ? { free: 1 } : {}),
         first: isoZ(first),
         ...(Object.keys(e).length ? { e } : {}),
         ...(manual.offset ? { o: manual.offset } : {}),
