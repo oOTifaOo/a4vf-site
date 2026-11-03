@@ -1,5 +1,5 @@
 /* Service worker của A4VFamily. Trang và dữ liệu luôn ưu tiên mạng để không hiện bản cũ;
-   chỉ dùng bản đã lưu khi mất mạng. File có ?v= không đổi nội dung nên lấy từ bộ nhớ trước. */
+   chỉ dùng bản đã lưu khi mất mạng. File trong /v/<phiên bản>/ không đổi nội dung nên lấy từ bộ nhớ trước. */
 
 const VERSION = '__VERSION__';
 const CACHE = `a4vf-${VERSION}`;
@@ -44,6 +44,6 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') event.respondWith(networkFirst(request, '/'));
   else if (url.pathname === '/sw.js') return;
-  else if (url.search.startsWith('?v=') && /\.(css|js)$/.test(url.pathname) && !/\/data\.js$/.test(url.pathname)) event.respondWith(cacheFirst(request));
+  else if (url.pathname.startsWith('/v/')) event.respondWith(cacheFirst(request));
   else if (/\.(js|json|css|png|webp|ico|webmanifest)$/.test(url.pathname)) event.respondWith(networkFirst(request));
 });
