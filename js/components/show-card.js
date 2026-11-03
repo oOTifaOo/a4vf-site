@@ -4,7 +4,7 @@ import { html } from '../lib/html.js';
 import { showPath } from '../lib/paths.js';
 import { formatEta, formatShortDateTime } from '../lib/time.js';
 import { chip, followButton, icon, languageChip, poster, statusBadge } from './common.js';
-import { platformLogo } from './platform-logo.js';
+import { platformLogo, platformMarks } from './platform-logo.js';
 
 /** Tập mới nhất đã chiếu, hoặc tập 1 nếu phim chưa lên sóng. */
 function airingLine(show, airing) {
@@ -60,6 +60,19 @@ export function showCard(show, now, { showCountdown = false } = {}) {
       </article>
     </li>`;
 }
+
+/** Thẻ gọn cho phim cũ trong kết quả tìm kiếm, dữ liệu đầy đủ chỉ tải khi mở trang phim. */
+export const archiveCard = (item) => html`
+  <li class="col">
+    <article class="show-card">
+      ${poster(item)}
+      <div class="show-card__body">
+        ${statusBadge('done')}
+        <h3 class="show-card__title"><a class="stretched-link" href="${showPath(item.id, item.title)}" title="${item.title}">${item.title}</a></h3>
+        ${platformMarks(item.platforms)}
+      </div>
+    </article>
+  </li>`;
 
 export const showGrid = (shows, now, options) => shows.map((show) => showCard(show, now, options));
 
