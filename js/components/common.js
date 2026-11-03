@@ -6,7 +6,7 @@ import { languageKind } from '../domain/shows.js';
 import { html } from '../lib/html.js';
 
 export const icon = (name, className = '') =>
-  html`<span class="material-symbols-rounded icon ${className}" aria-hidden="true">${name}</span>`;
+  html`<span class="material-symbols-rounded icon ${className}" data-icon="${name}" aria-hidden="true"></span>`;
 
 const initialsOf = (title) =>
   title.split(' ').slice(0, 2).map((word) => Array.from(word)[0]).join('').toUpperCase();
@@ -27,12 +27,12 @@ export function externalLink(url) {
 }
 
 /** Bìa tạo sẵn nằm dưới ảnh thật, nên ảnh lỗi vẫn còn bìa để hiện. */
-export function poster(show, size = '') {
+export function poster(show, size = '', { alt = '', eager = false } = {}) {
   const hasImage = /^(https?:|data:image\/)/i.test(show.poster);
   return html`
     <span class="poster ${size}" style="--poster-hue:${hueOf(show.title)}" aria-hidden="true">
       <span class="poster__initials">${initialsOf(show.title)}</span>
-      ${hasImage ? html`<img class="poster__image" src="${show.poster}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-remove-on-error>` : ''}
+      ${hasImage ? html`<img class="poster__image" src="${show.poster}" alt="${alt}" ${eager ? html`fetchpriority="high"` : html`loading="lazy" decoding="async"`} referrerpolicy="no-referrer" data-remove-on-error>` : ''}
     </span>`;
 }
 

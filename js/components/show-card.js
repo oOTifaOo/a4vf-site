@@ -1,26 +1,27 @@
-import { airingOf } from '../domain/shows.js';
+import { airingOf, episodeNumber } from '../domain/shows.js';
 import { isFollowing } from '../domain/follow.js';
 import { html } from '../lib/html.js';
+import { showPath } from '../lib/paths.js';
 import { formatEta, formatShortDateTime } from '../lib/time.js';
 import { chip, followButton, icon, languageChip, poster, statusBadge } from './common.js';
 import { platformLogo } from './platform-logo.js';
 
 /** Tập mới nhất đã chiếu, hoặc tập 1 nếu phim chưa lên sóng. */
-function airingLine(airing) {
+function airingLine(show, airing) {
   const aired = airing.aired > 0;
   const time = aired ? airing.timeOf(airing.aired) : airing.first;
   return html`
     <p class="show-card__airing">
       ${icon(aired ? 'history' : 'schedule')}
       <span class="visually-hidden">${aired ? 'Đã chiếu:' : 'Sẽ chiếu:'}</span>
-      <span>Tập ${aired ? airing.aired : 1} · <time>${formatShortDateTime(time)}</time></span>
+      <span>Tập ${episodeNumber(show.platforms[0], aired ? airing.aired : 1)} · <time>${formatShortDateTime(time)}</time></span>
     </p>`;
 }
 
 function followCountdown(show, airing, now) {
   if (!isFollowing(show.id)) return '';
   return html`<p class="show-card__eta">${airing.next
-    ? html`Tập ${airing.aired + 1} chiếu sau <strong>${formatEta(airing.next - now)}</strong>`
+    ? html`Tập ${episodeNumber(show.platforms[0], airing.aired + 1)} chiếu sau <strong>${formatEta(airing.next - now)}</strong>`
     : 'Đã chiếu hết'}</p>`;
 }
 
@@ -46,8 +47,8 @@ export function showCard(show, now, { showCountdown = false } = {}) {
         ${poster(show)}
         <div class="show-card__body">
           ${statusBadge(airing.status)}
-          <h3 class="show-card__title"><a class="stretched-link" href="#phim-${show.id}" title="${show.title}">${show.title}</a></h3>
-          ${airingLine(airing)}
+          <h3 class="show-card__title"><a class="stretched-link" href="${showPath(show.id, show.title)}" title="${show.title}">${show.title}</a></h3>
+          ${airingLine(show, airing)}
           ${showCountdown ? followCountdown(show, airing, now) : ''}
           ${episodeProgress(show, airing)}
           <div class="platform-logos">${show.platforms.map(platformLogo)}</div>
