@@ -7,9 +7,14 @@ import {
   createVideoFrame, dailymotionEmbedUrl, youtubeEmbedUrl, youtubeThumbnail, youtubeVideoId,
 } from '../components/video.js';
 import { LANGUAGES } from '../config.js';
-import { airingOf, languageKind } from '../domain/shows.js';
+import { airingOf, episodeNumber, languageKind } from '../domain/shows.js';
+import { showFacts } from '../domain/seo.js';
 import { html, mount } from '../lib/html.js';
+import { hasVietnameseRelease, PATHS, seasonPath, showPath } from '../lib/paths.js';
 import { formatDateTime, padNumber, toIso } from '../lib/time.js';
+import { reportButton } from '../ui/report.js';
+
+const YOUTUBE_URL = /youtube\.com|youtu\.be/i;
 
 const COUNTDOWN_UNITS = ['Ngày', 'Giờ', 'Phút', 'Giây'];
 
@@ -22,6 +27,44 @@ const externalAction = (url, label, content) => (isExternalUrl(url) ? html`
   <a class="btn btn-icon" href="${url}" target="_blank" rel="noopener"
     aria-label="${label}" data-bs-title="${label}">${content}</a>` : '');
 
+function breadcrumb(show, season) {
+  return html`
+    <nav class="breadcrumb-trail" aria-label="Vị trí trang">
+      <a href="${PATHS.home}">Lịch chiếu</a>
+      ${season ? html`<span aria-hidden="true">/</span><a href="${seasonPath(season.key)}">${season.name}</a>` : ''}
+      <span aria-hidden="true">/</span><span aria-current="page">${show.title}</span>
+    </nav>`;
+}
+
+const hasVietnameseMarks = (text) => /[ăâđêôơưạảãáàậấầặắằệếềịọộốồợớờụứừựỳýỵ]/i.test(text);
+
+function synopsisBlock(show) {
+  if (!show.synopsis) return '';
+  // Tóm tắt lấy nguyên từ AniList là tiếng Anh, khai báo đúng ngôn ngữ cho trình đọc màn hình và công cụ tìm kiếm.
+  return hasVietnameseMarks(show.synopsis)
+    ? html`<p class="synopsis">${show.synopsis}</p>`
+    : html`<p class="synopsis" lang="en">${show.synopsis}</p>`;
+}
+
+const RELATED_LIMIT = 8;
+
+/** Phim cùng mùa phổ biến nhất: giúp người xem và công cụ tìm kiếm đi tiếp sang phim khác. */
+function relatedShows(show, season, shows) {
+  const related = shows
+    .filter((item) => item.season === show.season && item.id !== show.id
+      && hasVietnameseRelease(item.filterLanguages, item.nsfw))
+    .sort((a, b) => b.popularity - a.popularity)
+    .slice(0, RELATED_LIMIT);
+  if (!related.length) return '';
+  return html`
+    <section class="related-shows" aria-labelledby="related-title">
+      <h2 id="related-title">Cùng ${season.name}</h2>
+      <ul class="list-unstyled">
+        ${related.map((item) => html`<li><a href="${showPath(item.id, item.title)}">${item.title}</a></li>`)}
+      </ul>
+    </section>`;
+}
+
 function actions(show) {
   return html`
     <div class="detail-actions">
@@ -29,6 +72,7 @@ function actions(show) {
       ${externalAction(show.websiteUrl, 'Trang chủ', icon('home'))}
       ${externalAction(show.xUrl, 'X (Twitter)', xLogo)}
       ${externalAction(show.malUrl, 'MyAnimeList', html`<span class="btn-icon__text">MAL</span>`)}
+      ${reportButton(show)}
     </div>`;
 }
 
@@ -75,8 +119,10 @@ function latestPlayableEpisode(platform, airing) {
   return null;
 }
 
+const episodeLabel = (platform, episode) => padNumber(episodeNumber(platform, episode));
+
 function episodeButton(platform, airing, episode, selectedEpisode) {
-  const number = padNumber(episode);
+  const number = episodeLabel(platform, episode);
   const when = formatDateTime(airing.timeOf(episode));
 
   if (episode > airing.aired) {
@@ -91,9 +137,12 @@ function episodeButton(platform, airing, episode, selectedEpisode) {
   }
 
   const url = platform.episodeLinks[episode] || platform.url;
-  if (!isExternalUrl(url)) {
+  // Phim đã phát được trên trang thì tập chưa có video riêng không đưa người xem sang YouTube.
+  const waitingForVideo = selectedEpisode && !platform.episodeLinks[episode] && YOUTUBE_URL.test(url);
+  if (!isExternalUrl(url) || waitingForVideo) {
+    const label = waitingForVideo ? 'Chưa có video nhúng' : 'Chưa có link xem';
     return html`<li><button class="btn episode episode--upcoming" type="button" aria-disabled="true"
-      aria-label="Tập ${number}, chưa có link xem" data-bs-title="Chưa có link xem">${number}</button></li>`;
+      aria-label="Tập ${number}, ${label.toLowerCase()}" data-bs-title="${label}">${number}</button></li>`;
   }
 
   const latest = episode === airing.aired && !selectedEpisode;
@@ -102,7 +151,7 @@ function episodeButton(platform, airing, episode, selectedEpisode) {
 }
 
 function playerFacade(platform, episode) {
-  const number = padNumber(episode);
+  const number = episodeLabel(platform, episode);
   return html`
     <button class="video-frame__play" type="button" data-play-episode="${episode}" aria-label="Phát tập ${number}">
       <img src="${youtubeThumbnail(episodeVideo(platform, episode))}" alt="" loading="lazy" data-remove-on-error>
@@ -112,7 +161,7 @@ function playerFacade(platform, episode) {
 
 function playerCaption(platform, airing, episode) {
   return html`
-    <span>Tập ${padNumber(episode)} · <time>${formatDateTime(airing.timeOf(episode))}</time></span>
+    <span>Tập ${episodeLabel(platform, episode)} · <time>${formatDateTime(airing.timeOf(episode))}</time></span>
     <a class="btn btn-icon" href="${platform.episodeLinks[episode]}" target="_blank" rel="noopener"
       aria-label="Mở trên YouTube" data-bs-title="Mở trên YouTube">${icon('open_in_new')}</a>`;
 }
@@ -150,7 +199,7 @@ function watchSection(show, platform, airing, { groups, group, selected }) {
             <tbody>
               ${episodes.map((episode) => html`
                 <tr>
-                  <th scope="row">${padNumber(episode)}</th>
+                  <th scope="row">${episodeLabel(platform, episode)}</th>
                   <td><time datetime="${toIso(airing.timeOf(episode))}">${formatDateTime(airing.timeOf(episode))}</time></td>
                   <td class="text-end">${episode <= airing.aired ? 'Đã chiếu' : 'Sắp chiếu'}</td>
                 </tr>`)}
@@ -199,7 +248,7 @@ function overview(show, season) {
       <dl class="fact-list">
         ${fact('translate', 'Tên Romaji', show.altTitle)}
         ${fact('format_list_numbered', 'Số tập', show.episodes)}
-        ${fact('date_range', 'Mùa chiếu', season ? html`<a href="#mua-${season.key}">${season.name}</a>` : '')}
+        ${fact('date_range', 'Mùa chiếu', season ? html`<a href="${seasonPath(season.key)}">${season.name}</a>` : '')}
         ${fact('verified', 'Bản quyền', platformNames)}
         ${fact('local_fire_department', 'Độ phổ biến', show.popularity.toLocaleString('vi-VN'))}
       </dl>
@@ -212,11 +261,11 @@ function overview(show, season) {
 }
 
 /** Đồng hồ tự dừng khi người xem rời trang và vẽ lại trang khi tới giờ chiếu. */
-function startCountdown(box, show, airing, onReached) {
+function startCountdown(box, platform, airing, onReached) {
   const target = airing.next;
   if (!target) return;
 
-  const episode = airing.aired + 1;
+  const episode = episodeNumber(platform, airing.aired + 1);
   mount(box, html`
     <span class="countdown__label">Tập ${episode} sẽ chiếu sau</span>
     <span class="countdown__units">${COUNTDOWN_UNITS.map((unit) => html`
@@ -241,13 +290,13 @@ function startCountdown(box, show, airing, onReached) {
   tick();
 }
 
-export function mountDetail(root, { catalog, showId, backHash }) {
+export function mountDetail(root, { catalog, showId, backPath }) {
   const show = catalog.shows.find((item) => item.id === showId);
   if (!show) {
     mount(root, html`
       <h1 class="visually-hidden" tabindex="-1">Không tìm thấy</h1>
       ${emptyState('movie_off', 'Không tìm thấy anime này.')}`);
-    return { title: 'Không tìm thấy' };
+    return null;
   }
 
   const season = catalog.seasons.find((item) => item.key === show.season);
@@ -262,7 +311,7 @@ export function mountDetail(root, { catalog, showId, backHash }) {
     const box = root.querySelector('#episode-player');
     box.replaceChildren(createVideoFrame(
       youtubeEmbedUrl(episodeVideo(platform, episode)),
-      `Tập ${padNumber(episode)} – ${show.title}`,
+      `Tập ${episodeLabel(platform, episode)} – ${show.title}`,
     ));
     mount(root.querySelector('#player-caption'), playerCaption(platform, airing, episode));
     root.querySelectorAll('.episode[data-play-episode]').forEach((button) => {
@@ -277,9 +326,10 @@ export function mountDetail(root, { catalog, showId, backHash }) {
 
     mount(root, html`
       <article class="detail">
-        <a class="btn btn-icon detail__back" href="${backHash}" aria-label="Quay lại" data-bs-title="Quay lại">${icon('arrow_back')}</a>
+        ${breadcrumb(show, season)}
+        <a class="btn btn-icon detail__back" href="${backPath}" aria-label="Quay lại" data-bs-title="Quay lại">${icon('arrow_back')}</a>
         <header class="detail-head">
-          ${poster(show, 'poster--large')}
+          ${poster(show, 'poster--large', { alt: `Poster ${show.title}`, eager: true })}
           <div class="detail-head__body">
             ${statusBadge(airing.status)}
             <h1 tabindex="-1">${show.title}</h1>
@@ -287,15 +337,17 @@ export function mountDetail(root, { catalog, showId, backHash }) {
             ${actions(show)}
           </div>
         </header>
-        <p class="synopsis">${show.synopsis || 'Chưa có mô tả nội dung cho phim này.'}</p>
+        <p class="detail-facts">${showFacts(show, season, Date.now())}</p>
+        ${synopsisBlock(show)}
         <div class="countdown" id="countdown"></div>
         ${watchSection(show, platform, airing, { groups, group, selected })}
         ${trailerSection(show)}
         ${overview(show, season)}
+        ${season ? relatedShows(show, season, catalog.shows) : ''}
       </article>`);
 
     // Tới giờ chiếu thì vẽ lại trang, trừ khi người xem đang phát video.
-    startCountdown(root.querySelector('#countdown'), show, airing, () => {
+    startCountdown(root.querySelector('#countdown'), platform, airing, () => {
       if (!root.querySelector('.video-frame iframe')) render();
     });
 
@@ -326,5 +378,5 @@ export function mountDetail(root, { catalog, showId, backHash }) {
   }
 
   render();
-  return { title: show.title };
+  return null;
 }

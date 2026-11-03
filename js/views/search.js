@@ -14,7 +14,7 @@ export function mountSearch(root, { catalog, state }) {
   const filters = state.search;
 
   mount(root, html`
-    <h1 class="visually-hidden" tabindex="-1">Tìm Anime</h1>
+    <h1 class="visually-hidden" tabindex="-1">Tìm anime Vietsub bản quyền</h1>
     <form class="search-panel" id="search-form" role="search">
       <div class="input-group">
         <span class="input-group-text">${icon('search')}</span>
