@@ -178,6 +178,28 @@ time,
   font-size: 0.6875rem;
 }
 
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: var(--target);
+  padding-inline: 0.75rem;
+  background: var(--surface);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.filter-chip .icon {
+  font-size: 1.25rem;
+}
+
+.chip--free {
+  background: var(--status-air);
+  color: var(--bg);
+  font-weight: 600;
+}
+
 .site-menu .dropdown-item {
   display: flex;
   align-items: center;
