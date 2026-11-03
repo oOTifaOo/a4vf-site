@@ -3,6 +3,7 @@
 import {
   chip, emptyState, externalLink, followButton, icon, isExternalUrl, languageChip, poster, statusBadge,
 } from '../components/common.js';
+import { notFoundPage } from '../components/not-found.js';
 import {
   createVideoFrame, dailymotionEmbedUrl, youtubeEmbedUrl, youtubeThumbnail, youtubeVideoId,
 } from '../components/video.js';
@@ -293,9 +294,7 @@ function startCountdown(box, platform, airing, onReached) {
 export function mountDetail(root, { catalog, showId, backPath }) {
   const show = catalog.shows.find((item) => item.id === showId);
   if (!show) {
-    mount(root, html`
-      <h1 class="visually-hidden" tabindex="-1">Không tìm thấy</h1>
-      ${emptyState('movie_off', 'Không tìm thấy anime này.')}`);
+    mount(root, notFoundPage('Không tìm thấy anime này', 'Có thể đường dẫn đã cũ hoặc phim chưa có trên A4VFamily. Bạn thử tìm lại theo tên nhé.'));
     return null;
   }
 
