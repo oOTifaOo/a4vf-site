@@ -29,6 +29,7 @@ import { html, mount } from '../lib/html.js';
 import { showPath, tierListPath } from '../lib/paths.js';
 import { notify } from '../ui/feedback.js';
 import { renderTierImage } from '../ui/tier-export.js';
+import { bindTierPeek } from '../ui/tier-peek.js';
 
 const SORTABLE_SRC = new URL('../lib/Sortable.min.js', import.meta.url).href;
 
@@ -72,19 +73,28 @@ function tierHeader(seasons, index, { readOnly }) {
 
 function tierItem(show, { readOnly, selected }) {
   if (readOnly) {
-    return html`<a class="tier-item" href="${showPath(show.id, show.title)}" title="${show.title}">
+    return html`<a class="tier-item" href="${showPath(show.id, show.title)}" data-peek="${show.id}">
       ${poster(show, 'poster--fill')}<span class="visually-hidden">${show.title}</span></a>`;
   }
   return html`<button class="tier-item ${selected ? 'is-selected' : ''}" type="button" data-item="${show.id}"
-    title="${show.title}" aria-pressed="${String(Boolean(selected))}">
+    data-peek="${show.id}" aria-pressed="${String(Boolean(selected))}">
     ${poster(show, 'poster--fill')}<span class="visually-hidden">${show.title}</span></button>`;
+}
+
+/** Tên hàng dài thì chữ nhỏ lại để vẫn nằm gọn trong ô. */
+function labelSizeClass(label) {
+  if (label.length > 10) return 'tier-row__label--tiny';
+  return label.length > 3 ? 'tier-row__label--small' : '';
 }
 
 function tierRow(tier, showsById, options) {
   const label = tier.label || 'Hàng chưa đặt tên';
   return html`
     <section class="tier-row" aria-label="${label}">
-      <h2 class="tier-row__label" style="background:${tier.color};color:${inkOn(tier.color)}">${tier.label}</h2>
+      <h2 class="tier-row__label ${labelSizeClass(tier.label)}" style="background:${tier.color};color:${inkOn(tier.color)}">${options.readOnly
+        ? tier.label
+        : html`<button class="tier-row__edit" type="button" data-edit-label="${tier.id}" title="Bấm để đổi tên"
+            aria-label="Đổi tên hàng ${label}">${tier.label}</button>`}</h2>
       <div class="tier-row__items" data-tier="${tier.id}">
         ${tier.items.map((id) => tierItem(showsById.get(id), { ...options, selected: options.selectedId === id }))}
       </div>
@@ -260,6 +270,8 @@ function mountShared(root, { catalog, state }, season, seasonIndex, seasonShows,
       ${shareDialog()}
     </section>`);
 
+  bindTierPeek(root.querySelector('section'), showsById);
+
   const dialog = createShareDialog(root, {
     getExport: (withTitles) => exportData(board, showsById, season, withTitles),
     getLink: () => shareUrl(season, board),
@@ -374,6 +386,7 @@ export function mountTierList(root, { catalog, state }, { seasonKey, shared }) {
   const editor = root.querySelector('#tier-editor');
   const editorList = root.querySelector('#tier-editor-list');
 
+  const peek = bindTierPeek(root.querySelector('.tier-page'), showsById);
   let sortables = [];
   let Sortable = null;
 
@@ -404,7 +417,7 @@ export function mountTierList(root, { catalog, state }, { seasonKey, shared }) {
 
   function renderPicker() {
     if (!selectedId) {
-      mount(pickerEl, html`<p class="tier-picker__hint">${icon('touch_app')}Chọn một poster rồi chọn hàng, hoặc kéo thả vào bảng.</p>`);
+      mount(pickerEl, html`<p class="tier-picker__hint">${icon('touch_app')}Chọn một poster rồi chọn hàng, hoặc kéo thả vào bảng. Bấm vào tên hàng để đổi tên.</p>`);
       return;
     }
     const show = showsById.get(selectedId);
@@ -488,6 +501,8 @@ export function mountTierList(root, { catalog, state }, { seasonKey, shared }) {
       ghostClass: 'tier-item--ghost',
       chosenClass: 'tier-item--chosen',
       dragClass: 'tier-item--drag',
+      onChoose: peek.pause,
+      onUnchoose: peek.resume,
       onEnd({ item, to, from }) {
         lastDragAt = Date.now();
         if (to === from && to.dataset.pool !== undefined) return;
@@ -510,8 +525,46 @@ export function mountTierList(root, { catalog, state }, { seasonKey, shared }) {
     sortables.push(new Sortable(poolEl, { ...options, sort: false }));
   }
 
+  function editLabel(button) {
+    const tier = board.tiers.find(({ id }) => id === button.dataset.editLabel);
+    const input = document.createElement('input');
+    Object.assign(input, {
+      type: 'text', value: tier.label, maxLength: MAX_LABEL_LENGTH, className: 'tier-row__input', autocomplete: 'off',
+    });
+    input.setAttribute('aria-label', button.getAttribute('aria-label'));
+
+    let finished = false;
+    function finish(save, refocus) {
+      if (finished) return;
+      finished = true;
+      if (save) {
+        tier.label = input.value.trim();
+        persist();
+      }
+      renderBoard();
+      renderPicker();
+      if (!editor.hidden) renderEditor();
+      if (refocus) boardEl.querySelector(`[data-edit-label="${tier.id}"]`)?.focus();
+    }
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== 'Escape') return;
+      event.preventDefault();
+      finish(event.key === 'Enter', true);
+    });
+    input.addEventListener('blur', () => finish(true, false));
+    button.replaceWith(input);
+    input.select();
+  }
+
   root.addEventListener('click', ({ target }) => {
     if (Date.now() - lastDragAt < 250 || target.closest('#tier-dialog')) return;
+
+    const labelButton = target.closest('[data-edit-label]');
+    if (labelButton) {
+      editLabel(labelButton);
+      return;
+    }
 
     const tierButton = target.closest('[data-place]');
     if (tierButton) {
