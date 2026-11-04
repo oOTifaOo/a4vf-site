@@ -9,6 +9,7 @@ import { isFollowing } from './domain/follow.js';
 import { aboutSeo, homeSeo, mineSeo, notFoundSeo, platformSeo, searchSeo, seasonSeo, showSeo } from './domain/seo.js';
 import { html, mount } from './lib/html.js';
 import { hasVietnameseRelease, legacyHashPath, PATHS, seasonKeyFromSlug, showPath } from './lib/paths.js';
+import { initAnalytics, trackPageView } from './ui/analytics.js';
 import { initPageActions } from './ui/feedback.js';
 import { initImageFallbacks } from './ui/images.js';
 import { initInstall } from './ui/install.js';
@@ -163,7 +164,10 @@ function route() {
   try {
     activeView = entry.render(match) ?? null;
     const seo = entry.seo(match);
-    if (seo) applySeo(seo);
+    if (seo) {
+      applySeo(seo);
+      trackPageView();
+    }
   } catch (error) {
     activeView = null;
     showRenderError(error);
@@ -215,6 +219,7 @@ function onFollowChange(id) {
 }
 
 async function start() {
+  initAnalytics();
   initThemeToggle();
   initTooltips();
   initImageFallbacks();
