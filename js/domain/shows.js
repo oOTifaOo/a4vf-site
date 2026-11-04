@@ -65,11 +65,12 @@ export function selectSeasonShows(shows, { seasonKey, sort, language, free, mine
 }
 
 /** Bộ lọc của trang Tìm Anime: thể loại, nền tảng, Free và tên. Dùng chung cho phim mới và phim cũ. */
-function matchesSearch(item, { query, genre, platform, free }) {
+function matchesSearch(item, { query, genre, platform, free, language }) {
   const names = PLATFORM_PAGES.find(({ slug }) => slug === platform)?.names;
   // Chọn cả nền tảng và Free: phim phải miễn phí đúng trên nền tảng đó.
   const available = free ? item.freePlatformNames : item.platformNames;
   return (!genre || item.genres.includes(genre))
+    && (!language || item.filterLanguages.some((value) => languageKind(value) === language))
     && (!free || available.length > 0)
     && (!names || available.some((name) => names.includes(name)))
     && matchesQuery(item, query);

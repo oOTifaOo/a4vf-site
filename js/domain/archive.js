@@ -18,6 +18,7 @@ const toItem = (raw) => ({
   searchText: [raw.t, raw.en, raw.alt].filter(Boolean).join(' '),
   poster: raw.img ?? '',
   genres: raw.g ?? [],
+  filterLanguages: raw.l ?? [],
   platforms: (raw.p ?? []).map((name) => ({ name })),
   platformNames: raw.p ?? [],
   freePlatformNames: raw.f ?? [],
