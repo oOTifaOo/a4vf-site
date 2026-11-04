@@ -3,7 +3,7 @@
 import { SHOW_GRID_CLASS, showGrid } from '../components/show-card.js';
 import { loadArchivedPlatforms } from '../domain/archive.js';
 import { html, mount } from '../lib/html.js';
-import { hasVietnameseRelease, seasonPath } from '../lib/paths.js';
+import { hasVietnameseRelease, platformHeading, platformReleaseText, seasonPath } from '../lib/paths.js';
 
 /** Phim đang có bản tiếng Việt trên nền tảng này. */
 export const platformShows = ({ shows }, platform) => shows.filter((show) =>
@@ -18,9 +18,9 @@ function renderPlatform(root, catalog, platform) {
     .filter(({ list }) => list.length);
 
   mount(root, html`
-    <h1 class="page-title" tabindex="-1">Anime Vietsub trên ${platform.label}</h1>
-    <p class="page-intro">${platform.label} là ${platform.note}. A4VFamily đang theo dõi ${shows.length} anime có phụ đề
-      tiếng Việt trên nền tảng này, kèm giờ chiếu theo giờ Việt Nam.</p>
+    <h1 class="page-title" tabindex="-1">${platformHeading(platform)}</h1>
+    <p class="page-intro">${platform.label} là ${platform.note}. A4VFamily đang theo dõi ${shows.length} anime
+      ${platformReleaseText(platform)} trên nền tảng này, kèm giờ chiếu theo giờ Việt Nam.</p>
     ${seasons.map(({ season, list }) => html`
       <section aria-labelledby="season-${season.key}">
         <header class="section-header">
