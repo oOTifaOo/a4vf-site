@@ -32,8 +32,7 @@ function todayCard({ show, time, episode }, now) {
     </li>`;
 }
 
-function weekItem({ show, airing }) {
-  const episode = airing.next ? airing.aired + 1 : airing.aired;
+function weekItem({ show, episode }) {
   return html`
     <li>
       <a class="week-item" href="${showPath(show.id, show.title)}" title="${show.title}">
