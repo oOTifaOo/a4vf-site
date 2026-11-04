@@ -49,13 +49,19 @@ async function writeData({ rawSeasons, rawShows, shows }) {
   const recent = rawShows.filter(isRecent);
   const older = rawShows.filter((raw, index) => !isRecent(raw, index) && !raw.nsfw);
 
-  await writeFile(join(dist, "data.js"), `/* Tạo tự động. */\nconst SEASONS=${JSON.stringify(rawSeasons)};\nconst SHOWS=${JSON.stringify(recent)};\n`);
+  // Mô tả chỉ trang phim mới cần, nên tách khỏi data.js. md đánh dấu phim có mô tả ở file riêng.
+  const light = recent.map(({ d, ...raw }) => (d ? { ...raw, md: 1 } : raw));
+  await writeFile(join(dist, "data.js"), `/* Tạo tự động. */\nconst SEASONS=${JSON.stringify(rawSeasons)};\nconst SHOWS=${JSON.stringify(light)};\n`);
   await writeFile(join(dist, "kho.json"), JSON.stringify(older.map((raw) => ({
     id: raw.id, s: raw.s, t: raw.t, ...(raw.en ? { en: raw.en } : {}), alt: raw.alt, ...(raw.img ? { img: raw.img } : {}), g: raw.g,
     p: [...new Set(raw.ps.filter((platform) => !/eng/i.test(platform.lang)).map((platform) => platform.n))],
     f: [...new Set(raw.ps.filter((platform) => platform.free).map((platform) => platform.n))],
   }))));
   await mkdir(join(dist, "du-lieu"), { recursive: true });
+  for (const key of new Set(recent.map((raw) => raw.s))) {
+    const synopses = recent.filter((raw) => raw.s === key && raw.d).map((raw) => [raw.id, raw.d]);
+    await writeFile(join(dist, "du-lieu", `mo-ta-${key}.json`), JSON.stringify(Object.fromEntries(synopses)));
+  }
   for (const key of new Set(older.map((raw) => raw.s))) {
     await writeFile(join(dist, "du-lieu", `mua-${key}.json`), JSON.stringify(older.filter((raw) => raw.s === key)));
   }
