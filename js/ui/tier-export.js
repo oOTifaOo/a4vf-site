@@ -7,6 +7,10 @@ import { hueOf } from '../components/common.js';
 const CANVAS_WIDTH = 1200;
 const PADDING = 24;
 const LABEL_WIDTH = 128;
+const LABEL_LARGEST = 46;
+const LABEL_SMALLEST = 15;
+const LABEL_MAX_LINES = 3;
+const LABEL_LINE_HEIGHT = 1.15;
 const COLUMNS = 8;
 const CELL_GAP = 6;
 const ROW_GAP = 6;
@@ -221,10 +225,25 @@ function drawTierLabel(ctx, tier, x, y, height) {
   ctx.fillStyle = tier.ink;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const label = tier.label || ' ';
-  const size = fitFontSize(ctx, label, LABEL_WIDTH - 16, 46, 15, (px) => `600 ${px}px ${FONT_BODY}`);
+  const { size, lines } = fitLabel(ctx, tier.label || ' ', LABEL_WIDTH - 16, height - 12);
   ctx.font = `600 ${size}px ${FONT_BODY}`;
-  ctx.fillText(label, x + LABEL_WIDTH / 2, y + height / 2);
+  const lineHeight = size * LABEL_LINE_HEIGHT;
+  const firstLine = y + height / 2 - (lines.length - 1) * lineHeight / 2;
+  lines.forEach((line, index) => ctx.fillText(line, x + LABEL_WIDTH / 2, firstLine + index * lineHeight));
+}
+
+/** Tìm cỡ chữ lớn nhất để tên hàng vừa ô, tên dài thì xuống dòng. */
+function fitLabel(ctx, label, maxWidth, maxHeight) {
+  const whole = label.trim().split(/\s+/).join(' ');
+  for (let size = LABEL_LARGEST; size > LABEL_SMALLEST; size -= 1) {
+    ctx.font = `600 ${size}px ${FONT_BODY}`;
+    const lines = wrapText(ctx, whole, maxWidth, LABEL_MAX_LINES);
+    const fitsWidth = lines.every((line) => ctx.measureText(line).width <= maxWidth);
+    const fitsHeight = lines.length * size * LABEL_LINE_HEIGHT <= maxHeight;
+    if (fitsWidth && fitsHeight && lines.join(' ') === whole) return { size, lines };
+  }
+  ctx.font = `600 ${LABEL_SMALLEST}px ${FONT_BODY}`;
+  return { size: LABEL_SMALLEST, lines: wrapText(ctx, whole, maxWidth, LABEL_MAX_LINES) };
 }
 
 /**
