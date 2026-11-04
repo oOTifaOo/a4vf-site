@@ -56,6 +56,7 @@ async function writeData({ rawSeasons, rawShows, shows }) {
     id: raw.id, s: raw.s, t: raw.t, ...(raw.en ? { en: raw.en } : {}), alt: raw.alt, ...(raw.img ? { img: raw.img } : {}), g: raw.g,
     p: [...new Set(raw.ps.filter((platform) => !/eng/i.test(platform.lang)).map((platform) => platform.n))],
     f: [...new Set(raw.ps.filter((platform) => platform.free).map((platform) => platform.n))],
+    l: [...new Set(raw.ps.flatMap((platform) => [platform.lang, ...(platform.dub ? ["Lồng tiếng"] : [])]))],
   }))));
   await mkdir(join(dist, "du-lieu"), { recursive: true });
   for (const key of new Set(recent.map((raw) => raw.s))) {
