@@ -3,7 +3,7 @@
 import { emptyState } from './components/common.js';
 import { notFoundPage } from './components/not-found.js';
 import { PLATFORM_PAGES } from './config.js';
-import { loadArchivedShow, loadSeasonIfArchived } from './domain/archive.js';
+import { loadArchivedShow, loadSeasonIfArchived, loadSynopsis } from './domain/archive.js';
 import { defaultSeason, loadCatalog } from './domain/catalog.js';
 import { isFollowing } from './domain/follow.js';
 import { aboutSeo, homeSeo, mineSeo, notFoundSeo, platformSeo, searchSeo, seasonSeo, showSeo, tierListSeo } from './domain/seo.js';
@@ -66,6 +66,15 @@ function renderShow(id) {
     loadArchivedShow(catalog, id).finally(route);
     return null;
   }
+  if (show?.synopsisPending) {
+    // Giữ nội dung đang hiện cho tới khi có mô tả, rồi vẽ lại như lần vào trang đầu tiên.
+    const wasFirstRoute = firstRoute;
+    loadSynopsis(show).finally(() => {
+      firstRoute = wasFirstRoute;
+      route();
+    });
+    return null;
+  }
   // Tên phim đổi thì đường dẫn đổi theo, đường dẫn cũ tự chuyển sang đường dẫn đúng.
   if (show) history.replaceState(null, '', showPath(show.id, show.title));
   return mountDetail(outlet, { catalog, showId: id, backPath });
@@ -73,6 +82,7 @@ function renderShow(id) {
 
 function showPageSeo(id) {
   const show = catalog.shows.find((item) => item.id === id);
+  if (show?.synopsisPending) return null;
   if (!show) return archiveChecked.has(id) ? notFoundSeo(location.pathname) : null;
   return showSeo(show, catalog.seasons.find((season) => season.key === show.season));
 }
