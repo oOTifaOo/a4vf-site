@@ -15,7 +15,7 @@ export const REMOTE_DATA_URL = 'https://ootifaoo.github.io/a4vf-site/data.js';
 export const PLATFORM_PAGES = [
   { slug: 'muse-viet-nam', label: 'Muse Việt Nam', names: ['Muse Việt Nam'], note: 'kênh YouTube miễn phí' },
   { slug: 'ani-one-viet-nam', label: 'Ani-One Việt Nam', names: ['Ani-one Việt Nam'], note: 'kênh YouTube miễn phí' },
-  { slug: 'pops', label: 'POPS', names: ['POPS'], note: 'kênh YouTube miễn phí' },
+  { slug: 'pops', label: 'POPS', names: ['POPS'], note: 'kênh YouTube miễn phí', dubbed: true },
   { slug: 'netflix', label: 'Netflix', names: ['Netflix'], note: 'dịch vụ trả phí' },
   { slug: 'fpt-play', label: 'FPT Play', names: ['FPT Play'], note: 'dịch vụ có quảng cáo và gói trả phí' },
   { slug: 'crunchyroll', label: 'Crunchyroll', names: ['Crunchyroll'], note: 'dịch vụ anime có phụ đề tiếng Việt' },
