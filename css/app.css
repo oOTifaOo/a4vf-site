@@ -1757,6 +1757,56 @@ time,
   margin: 0;
 }
 
+/* ---------- Trang phim: các phần của cùng một bộ ---------- */
+
+.series-list {
+  margin-top: 1.5rem;
+}
+
+.series-list h2 {
+  font-size: 1.125rem;
+}
+
+.series-list ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.series-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.series-item:hover .series-item__title {
+  text-decoration: underline;
+}
+
+.series-item[aria-current="page"] .poster {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.series-item__title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.series-item__meta {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 /* ---------- Giới thiệu: trang truyện tranh ---------- */
 
 .about {
