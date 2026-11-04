@@ -1807,6 +1807,179 @@ time,
   font-size: 0.75rem;
 }
 
+/* ---------- Tier list ---------- */
+
+.tier-intro {
+  max-width: 44rem;
+  color: var(--muted);
+}
+
+.tier-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.tier-controls__title {
+  flex: 1 1 16rem;
+}
+
+.tier-board {
+  display: grid;
+  gap: 2px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+}
+
+.tier-row {
+  display: flex;
+  min-height: 6.5rem;
+  background: var(--surface-raised);
+}
+
+.tier-row__label {
+  display: grid;
+  flex: 0 0 4rem;
+  place-items: center;
+  background: var(--tier-color);
+  color: #16181d;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.tier-row__items,
+.tier-pool {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.25rem;
+}
+
+.tier-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tier-status {
+  min-height: 1.5rem;
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+}
+
+.tier-result {
+  margin-top: 0.5rem;
+}
+
+.tier-result img {
+  display: block;
+  width: 100%;
+  max-width: 48rem;
+  border-radius: var(--radius-s);
+}
+
+.tier-pool-title {
+  margin-top: 1.5rem;
+  font-size: 1.125rem;
+}
+
+.tier-pool {
+  min-height: 6.5rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-s);
+}
+
+.tier-pool__empty {
+  margin: auto;
+  color: var(--muted);
+}
+
+.tier-tile {
+  flex: 0 0 4.25rem;
+  padding: 0;
+  overflow: hidden;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-s);
+  cursor: grab;
+}
+
+.tier-tile img {
+  pointer-events: none;
+}
+
+.tier-tile[aria-pressed="true"] {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.tier-picker {
+  position: fixed;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  z-index: 1030;
+  display: grid;
+  gap: 0.375rem;
+  width: min(24rem, calc(100vw - 2rem));
+  padding: 0.625rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 30%);
+  transform: translateX(-50%);
+}
+
+.tier-picker[hidden] {
+  display: none;
+}
+
+.tier-picker__name {
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tier-picker__buttons {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.25rem;
+}
+
+.tier-picker__buttons button {
+  display: grid;
+  place-items: center;
+  height: 2.75rem;
+  background: var(--tier-color, var(--surface));
+  border: 0;
+  border-radius: var(--radius-s);
+  color: #16181d;
+  font-weight: 700;
+}
+
+.tier-picker__buttons button:last-child {
+  color: var(--ink);
+}
+
+@media (max-width: 767.98px) {
+  .tier-picker {
+    bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .tier-row__label {
+    flex-basis: 2.75rem;
+    font-size: 1.25rem;
+  }
+}
+
 /* ---------- Giới thiệu: trang truyện tranh ---------- */
 
 .about {
