@@ -87,6 +87,13 @@ export function searchArchive(items, filters, knownIds) {
     .sort((a, b) => a.title.localeCompare(b.title, 'vi'));
 }
 
+/** Tên tiếng Anh, bỏ qua khi trống hoặc trùng tên đã hiện sẵn. */
+export function englishName({ englishTitle, title, altTitle }) {
+  const key = (text) => (text ?? '').trim().toLowerCase();
+  const english = key(englishTitle);
+  return english && english !== key(title) && english !== key(altTitle) ? englishTitle.trim() : '';
+}
+
 export function allGenres(shows) {
   return [...new Set(shows.filter((show) => !show.nsfw).flatMap((show) => show.genres))]
     .sort((a, b) => a.localeCompare(b, 'vi'));

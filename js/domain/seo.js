@@ -4,7 +4,7 @@ import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, WEEKDAYS } from '../config.js';
 import { hasVietnameseRelease, PATHS, platformPath, seasonPath, showPath } from '../lib/paths.js';
 import { truncateWords } from '../lib/text.js';
 import { formatTime, weekdayOf } from '../lib/time.js';
-import { airingOf, languageKind } from './shows.js';
+import { airingOf, englishName, languageKind } from './shows.js';
 
 const MAX_DESCRIPTION = 155;
 const withBrand = (title) => `${title} | ${SITE_NAME}`;
@@ -105,7 +105,8 @@ export function showFacts(show, season, now) {
   const names = [...new Set(show.platforms.map((platform) => platform.name))].join(', ');
   const count = show.episodesUnknown ? '' : ` ${show.episodes} tập`;
   const seasonText = season ? `, thuộc ${season.name}` : '';
-  const facts = [`${show.title} là anime ${show.format}${count}${seasonText}.`];
+  const english = englishName(show);
+  const facts = [`${show.title}${english ? ` (${english})` : ''} là anime ${show.format}${count}${seasonText}.`];
   facts.push(`Tại Việt Nam, phim có ${vietnameseLabel(show)} trên ${names}.`);
   const airing = airingOf(show, now);
   if (airing.next && show.format !== 'Movie') {
