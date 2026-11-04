@@ -2,7 +2,7 @@
 
 import { PLATFORM_PAGES, UPCOMING_WINDOW_DAYS } from '../config.js';
 import { normalizeText } from '../lib/text.js';
-import { DAY_MS, todayStart, WEEK_MS, weekdayOf } from '../lib/time.js';
+import { DAY_MS, todayStart, WEEK_MS, weekdayOf, weekStart } from '../lib/time.js';
 import { isFollowing } from './follow.js';
 
 /**
@@ -106,12 +106,17 @@ export const airWeekday = (show) => weekdayOf(firstAirTime(show));
 export function selectWeekShows(shows, filters, now) {
   // Tính từ đầu ngày phát sóng, để phim 24:30 đứng sau phim 23:00.
   const clockOf = (show) => firstAirTime(show) - todayStart(firstAirTime(show));
+  const start = weekStart(now);
+  const airedThisWeek = ({ aired, timeOf }) => aired > 0 && timeOf(aired) >= start;
   return shows
     .filter((show) => matchesFilters(show, filters))
     .map((show) => ({ show, airing: airingOf(show, now) }))
     .filter(({ airing }) =>
       airing.status === 'air' ||
+      (airing.status === 'done' && airedThisWeek(airing)) ||
       (airing.status === 'soon' && airing.first - now < UPCOMING_WINDOW_DAYS * DAY_MS))
+    // Lịch tuần ghi tập của tuần này: tập đã chiếu, hoặc tập sắp chiếu nếu chưa tới ngày.
+    .map(({ show, airing }) => ({ show, episode: airedThisWeek(airing) ? airing.aired : airing.aired + 1 }))
     .sort((a, b) => clockOf(a.show) - clockOf(b.show));
 }
 
