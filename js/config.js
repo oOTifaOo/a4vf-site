@@ -21,6 +21,15 @@ export const PLATFORM_PAGES = [
   { slug: 'iq', label: 'iQIYI', names: ['iQ'], note: 'dịch vụ phim châu Á' },
 ];
 
+/** Các hạng trong trang Tier list, từ cao xuống thấp. */
+export const TIERS = [
+  { key: 'S', color: '#ff7f7f' },
+  { key: 'A', color: '#ffbf7f' },
+  { key: 'B', color: '#ffdf7f' },
+  { key: 'C', color: '#bfff7f' },
+  { key: 'D', color: '#7fbfff' },
+];
+
 export const CONTACT_EMAIL = 'a4vtranslation@gmail.com';
 
 /** Mã đo của Google Analytics 4. Xem tại Admin > Data streams > a4vf.net. */

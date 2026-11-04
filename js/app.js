@@ -6,7 +6,7 @@ import { PLATFORM_PAGES } from './config.js';
 import { loadArchivedShow } from './domain/archive.js';
 import { defaultSeason, loadCatalog } from './domain/catalog.js';
 import { isFollowing } from './domain/follow.js';
-import { aboutSeo, homeSeo, mineSeo, notFoundSeo, platformSeo, searchSeo, seasonSeo, showSeo } from './domain/seo.js';
+import { aboutSeo, homeSeo, mineSeo, notFoundSeo, platformSeo, searchSeo, seasonSeo, showSeo, tierListSeo } from './domain/seo.js';
 import { html, mount } from './lib/html.js';
 import { hasVietnameseRelease, legacyHashPath, PATHS, seasonKeyFromSlug, showPath } from './lib/paths.js';
 import { initAnalytics, trackPageView } from './ui/analytics.js';
@@ -22,6 +22,7 @@ import { mountDetail } from './views/detail.js';
 import { mountHome } from './views/home.js';
 import { mountPlatform, platformShows } from './views/platform.js';
 import { mountSearch } from './views/search.js';
+import { mountTierList } from './views/tier-list.js';
 import { mountSeasonList } from './views/season-list.js';
 
 const outlet = document.querySelector('#main');
@@ -115,6 +116,12 @@ const ROUTES = [
       state.list.mine = true;
       return mountSeasonList(outlet, context());
     },
+  },
+  {
+    pattern: /^\/tier-list$/,
+    nav: 'tier-list',
+    seo: tierListSeo,
+    render: () => mountTierList(outlet, context()),
   },
   {
     pattern: /^\/tim-anime$/,
