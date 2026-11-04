@@ -58,12 +58,27 @@ function cleanUrl(v) {
 function parseEps(text) {
   const e = {};
   for (const line of String(text || "").split(/\r?\n/)) {
-    const m = /^\s*(\d{1,3})\s*[|=]\s*(\S+)\s*$/.exec(line);
+    const m = /^\s*(\d{1,4})\s*[|=]\s*(\S+)\s*$/.exec(line);
     const url = m && cleanUrl(m[2]);
     if (url) e[Number(m[1])] = url;
   }
   return e;
 }
+
+// Phim quá dài, không vừa một ô trong Sheet: link từng tập để trong data/*.csv (cột tap,video_id).
+const LONG_SERIES = [
+  { id: 235, platform: "POPS Anime", file: "tap-conan-pops-anime.csv" },
+  { id: 2471, platform: "POPS Kids", file: "tap-doraemon-pops-kids.csv", to: 185 },
+  { id: 8687, platform: "POPS Kids", file: "tap-doraemon-pops-kids.csv", from: 186 },
+];
+async function longSeriesLinks({ file, from = 1, to = Infinity }) {
+  const text = await readFile(new URL(`../data/${file}`, import.meta.url), "utf8");
+  return text.split(/\r?\n/).slice(1).map((line) => line.split(","))
+    .filter(([tap, id]) => id && Number(tap) >= from && Number(tap) <= to)
+    .map(([tap, id]) => `${tap}|https://youtu.be/${id}`).join("\n");
+}
+const longLinks = new Map(await Promise.all(LONG_SERIES.map(async (series) =>
+  [`${series.id}|${series.platform}`, await longSeriesLinks(series)])));
 
 // Playlist đánh số nối tiếp mùa trước: link_cac_tap có "29|..." dù phim chỉ có 10 tập.
 // Đưa về tập 1, 2... để tính lịch, và giữ lại số lệch để website hiện đúng số như YouTube.
@@ -268,7 +283,8 @@ async function main() {
       if (!first) return null;
       // Link điền tay trong link_cac_tap được ưu tiên hơn link tự tạo
       const link = cleanUrl(row.link_xem), count = m.episodes || 12;
-      const manual = alignEpisodes(parseEps(row.link_cac_tap), count, Number(row.lech_tap) || 0);
+      const episodeText = longLinks.get(`${m.id}|${row.nen_tang}`) || row.link_cac_tap;
+      const manual = alignEpisodes(parseEps(episodeText), count, Number(row.lech_tap) || 0);
       const e = { ...fptEpisodes(link, count), ...netflixEpisodes(link, count), ...manual.links };
       const ms = parseMilestones(row.gio_cac_tap);
       return {
@@ -291,7 +307,8 @@ async function main() {
       alt: m.title.romaji,
       ...(m.title.english ? { en: m.title.english } : {}),
       first: ps[0].first,
-      eps: m.episodes || 12,
+      // AniList chưa có tổng số tập thì lấy theo tập cao nhất đã có link, tối thiểu 12.
+      eps: m.episodes || Math.max(12, ...ps.flatMap((p) => Object.keys(p.e || {}).map(Number))),
       ...(m.episodes ? {} : { eu: 1 }), // AniList chưa có tổng số tập
       v: m.popularity || 0,
       g: m.genres || [],
