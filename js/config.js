@@ -23,6 +23,9 @@ export const PLATFORM_PAGES = [
 
 export const CONTACT_EMAIL = 'a4vtranslation@gmail.com';
 
+/** Mã đo của Google Analytics 4. Xem tại Admin > Data streams > a4vf.net. */
+export const GA_MEASUREMENT_ID = 'G-HJQ209GCYN';
+
 /**
  * Đường dẫn Web app của apps-script/bao-loi.gs, kết thúc bằng /exec.
  * Để trống thì web thật ẩn nút báo lỗi và Hòm thư góp ý.
