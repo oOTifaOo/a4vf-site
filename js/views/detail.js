@@ -7,7 +7,6 @@ import { notFoundPage } from '../components/not-found.js';
 import {
   createVideoFrame, dailymotionEmbedUrl, youtubeEmbedUrl, youtubeThumbnail, youtubeVideoId,
 } from '../components/video.js';
-import { LANGUAGES } from '../config.js';
 import { airingOf, englishName, episodeNumber, languageKind } from '../domain/shows.js';
 import { showFacts } from '../domain/seo.js';
 import { html, mount } from '../lib/html.js';
@@ -96,19 +95,26 @@ function actions(show) {
     </div>`;
 }
 
-/** Vietsub và Engsub là hai nhóm nền tảng; nhóm chính của phim đứng trước. */
+const SUBTITLE_GROUPS = {
+  vi: { label: 'Vietsub', icon: 'closed_caption' },
+  dub: { label: 'Lồng Tiếng', icon: 'record_voice_over' },
+  en: { label: 'Engsub', icon: 'language' },
+};
+
+/** Mỗi loại bản dịch là một nhóm nền tảng; loại của nền tảng chính đứng trước. */
 function subtitleGroups(show) {
-  const groupOf = (platforms) => {
-    const kind = languageKind(platforms[0].language) === 'en' ? 'en' : 'vi';
-    return { platforms, ...LANGUAGES.find((option) => option.value === kind) };
-  };
-  return [show.platforms, show.otherPlatforms].filter((list) => list.length).map(groupOf);
+  const byKind = new Map();
+  for (const platform of [...show.platforms, ...show.otherPlatforms]) {
+    const kind = languageKind(platform.language);
+    byKind.set(kind, [...(byKind.get(kind) ?? []), platform]);
+  }
+  return [...byKind].map(([kind, platforms]) => ({ platforms, ...SUBTITLE_GROUPS[kind] }));
 }
 
 function subtitleTabs(groups, active) {
   if (groups.length < 2) return '';
   return html`
-    <div class="subtitle-tabs" role="group" aria-label="Phụ đề">
+    <div class="subtitle-tabs" role="group" aria-label="Bản dịch">
       ${groups.map((group, index) => html`
         <button class="subtitle-tab" type="button" data-group="${index}" aria-pressed="${index === active}">
           ${icon(group.icon)}${group.label}
