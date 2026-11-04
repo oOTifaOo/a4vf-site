@@ -1,5 +1,6 @@
 // Tạo data.js từ AniList + Google Sheet (data/links.csv). Cần Node 18 trở lên.
 // Chạy thử: SHEET_CSV_URL="https://..." node scripts/update.mjs
+import { groupSeries, loadRelations } from "./series.mjs";
 import { readFile, writeFile } from "node:fs/promises";
 
 const WEEK = 7 * 864e5;
@@ -123,12 +124,34 @@ const QUERY = `query($ids:[Int],$page:Int){Page(page:$page,perPage:50){media(id_
 const QUERY_SEASON = `query($season:MediaSeason,$year:Int,$page:Int){Page(page:$page,perPage:50){pageInfo{hasNextPage}
   media(season:$season,seasonYear:$year,type:ANIME,format_in:[TV,TV_SHORT,ONA],isAdult:false,sort:POPULARITY_DESC){${FIELDS}}}}`;
 
-async function gql(query, variables) {
+/** Gắn danh sách các phần của cùng một bộ. Lỗi ở bước này không chặn việc cập nhật lịch chiếu. */
+async function addSeries(shows, sheet) {
+  const listed = shows.filter((show) => sheet.has(show.id) && !show.gone);
+  try {
+    const relations = await loadRelations(listed.map((show) => show.id), gql, () => new Promise((r) => setTimeout(r, 2300)));
+    const byId = new Map(shows.map((show) => [show.id, show]));
+    for (const [id, ids] of groupSeries(listed.filter((show) => !show.nsfw).map((show) => show.id), relations)) {
+      byId.get(id).sr = ids.map((other) => {
+        const { t, img, f, first } = byId.get(other);
+        const year = Math.floor((relations.dates.get(other) ?? 0) / 10000);
+        return { id: other, t, ...(img ? { img } : {}), f, y: year && year < 9999 ? year : Number(first.slice(0, 4)) };
+      });
+    }
+  } catch (error) {
+    console.warn("Không lấy được quan hệ giữa các phần, bỏ qua lần này:", error.message);
+  }
+}
+
+async function gql(query, variables, retries = 2) {
   const res = await fetch("https://graphql.anilist.co", {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ query, variables }),
   });
+  if (res.status === 429 && retries > 0) {
+    await new Promise((r) => setTimeout(r, 65000));
+    return gql(query, variables, retries - 1);
+  }
   if (!res.ok) throw new Error("AniList lỗi " + res.status);
   const j = await res.json();
   if (j.errors) throw new Error(JSON.stringify(j.errors));
@@ -284,6 +307,7 @@ async function main() {
     });
   }
   if (!shows.length) throw new Error("Không dựng được phim nào, giữ nguyên data.js cũ.");
+  await addSeries(shows, sheet);
   const keys = [...new Set(shows.map((s) => s.s))].sort((a, b) => {
     const [sa, ya] = a.split("-"), [sb, yb] = b.split("-");
     return ya - yb || SEASON_ORDER[sa] - SEASON_ORDER[sb];
