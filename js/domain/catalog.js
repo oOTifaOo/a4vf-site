@@ -56,6 +56,7 @@ export function normalizeShow(raw, index) {
     format: raw.f,
     synopsis: raw.d ?? '',
     poster: raw.img ?? '',
+    series: (raw.sr ?? []).map(({ id, t, img, f, y }) => ({ id, title: t, poster: img ?? '', format: f, year: y })),
     malUrl: raw.mal ?? '',
     websiteUrl: raw.web ?? '',
     xUrl: raw.x ?? '',
