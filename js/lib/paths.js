@@ -12,6 +12,9 @@ export const PATHS = {
   tierList: '/tier-list',
 };
 
+/** /tier-list?mua=thu-2026. Link chia sẻ thêm dữ liệu bảng sau dấu #. */
+export const tierListPath = (key) => `${PATHS.tierList}?mua=${seasonPath(key).split('/').pop()}`;
+
 export const platformPath = (slug) => `/nen-tang/${slug}`;
 
 const SEASON_SLUGS = { winter: 'dong', spring: 'xuan', summer: 'ha', fall: 'thu' };
