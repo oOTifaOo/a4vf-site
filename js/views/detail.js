@@ -8,7 +8,7 @@ import {
   createVideoFrame, dailymotionEmbedUrl, youtubeEmbedUrl, youtubeThumbnail, youtubeVideoId,
 } from '../components/video.js';
 import { LANGUAGES } from '../config.js';
-import { airingOf, episodeNumber, languageKind } from '../domain/shows.js';
+import { airingOf, englishName, episodeNumber, languageKind } from '../domain/shows.js';
 import { showFacts } from '../domain/seo.js';
 import { html, mount } from '../lib/html.js';
 import { hasVietnameseRelease, PATHS, seasonPath, showPath } from '../lib/paths.js';
@@ -243,10 +243,12 @@ const fact = (iconName, label, value) => html`
 
 function overview(show, season) {
   const platformNames = [...new Set(show.platforms.map((platform) => platform.name))].join(', ');
+  const english = englishName(show);
   return html`
     <section aria-labelledby="overview-title">
       <header class="section-header"><h2 id="overview-title">${icon('info')}Tổng quan</h2></header>
       <dl class="fact-list">
+        ${english ? fact('language', 'Tên tiếng Anh', english) : ''}
         ${fact('translate', 'Tên Romaji', show.altTitle)}
         ${fact('format_list_numbered', 'Số tập', show.episodes)}
         ${fact('date_range', 'Mùa chiếu', season ? html`<a href="${seasonPath(season.key)}">${season.name}</a>` : '')}
