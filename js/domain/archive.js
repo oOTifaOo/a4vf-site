@@ -51,6 +51,18 @@ export async function loadSeasonIfArchived(catalog, key) {
   return items.some((item) => item.season === key) ? loadSeason(catalog, key) : 0;
 }
 
+/** Mô tả phim gần đây nằm riêng theo mùa để data.js nhẹ hơn; mỗi mùa chỉ tải một lần. */
+const synopsisSeasons = new Map();
+
+export async function loadSynopsis(show) {
+  if (!synopsisSeasons.has(show.season)) {
+    synopsisSeasons.set(show.season, fetchJson(`/du-lieu/mo-ta-${show.season}.json`).catch(() => ({})));
+  }
+  const synopses = await synopsisSeasons.get(show.season);
+  show.synopsis = synopses?.[show.id] ?? '';
+  show.synopsisPending = false;
+}
+
 export async function loadArchivedShow(catalog, id) {
   const item = (await loadArchiveIndex()).find((entry) => entry.id === id);
   if (!item) return false;

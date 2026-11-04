@@ -6,7 +6,7 @@ import { languageKind } from './shows.js';
 
 const DUB_PATTERN = /lồng/i;
 
-/** Đổi địa chỉ data.js mỗi phút để trình duyệt không dùng bản đã lưu quá lâu. */
+/** Bản trên GitHub Pages đổi địa chỉ mỗi phút. Bản trên host giữ địa chỉ cố định để trình duyệt dùng lại khi file chưa đổi. */
 const DATA_REFRESH_MS = 60_000;
 
 /** Cột ngon_ngu trong Sheet đôi khi chứa ngày giờ do nhập lệch cột; khi đó coi như Vietsub. */
@@ -55,6 +55,7 @@ export function normalizeShow(raw, index) {
     genres: raw.g,
     format: raw.f,
     synopsis: raw.d ?? '',
+    synopsisPending: Boolean(raw.md),
     poster: raw.img ?? '',
     series: (raw.sr ?? []).map(({ id, t, img, f, y }) => ({ id, title: t, poster: img ?? '', format: f, year: y })),
     malUrl: raw.mal ?? '',
@@ -96,16 +97,15 @@ function loadScript(src) {
 /** Trên website lấy data.js từ GitHub Pages; chạy thử trên máy hoặc khi lỗi thì dùng file cạnh index.html. */
 async function loadDataFile() {
   const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
-  const version = `?v=${Math.floor(Date.now() / DATA_REFRESH_MS)}`;
   if (REMOTE_DATA_URL && !isLocal) {
     try {
-      await loadScript(`${REMOTE_DATA_URL}${version}`);
+      await loadScript(`${REMOTE_DATA_URL}?v=${Math.floor(Date.now() / DATA_REFRESH_MS)}`);
       return;
     } catch {
       console.warn('Không tải được data.js từ GitHub Pages, dùng bản trên host.');
     }
   }
-  await loadScript(`/data.js${version}`);
+  await loadScript('/data.js');
 }
 
 /** Tải data.js rồi đọc SEASONS và SHOWS do file đó tạo ra. */
