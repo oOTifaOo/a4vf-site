@@ -76,7 +76,7 @@ export function mountHome(root, { catalog, state }) {
   let selectedDay = today;
 
   mount(root, html`
-    <h1 class="page-title" tabindex="-1">Lịch chiếu anime Vietsub bản quyền</h1>
+    <h1 class="page-title" tabindex="-1">Lịch chiếu Anime bản quyền</h1>
     <form class="filter-bar" id="home-filters">
       ${languageFilter(filters.language)}
       ${freeToggle(filters.free)}
