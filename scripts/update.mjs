@@ -28,6 +28,8 @@ function parseCSV(t) {
 }
 
 const hidden = new Set();
+// Hai kênh YouTube miễn phí luôn là nền tảng chính, còn lại giữ thứ tự trong Sheet.
+const platformRank = ({ nen_tang: name = "" }) => (/muse/i.test(name) ? 0 : /ani-?one/i.test(name) ? 1 : 2);
 async function loadSheet() {
   const url = process.env.SHEET_CSV_URL;
   const text = url
@@ -39,8 +41,9 @@ async function loadSheet() {
     if (!Number.isInteger(id) || id <= 0) continue;
     if (r.an) { hidden.add(id); continue; } // dòng bị ẩn: cũng không tự động thêm lại
     if (!byId.has(id)) byId.set(id, []);
-    byId.get(id).push(r); // mỗi dòng = một nền tảng; dòng đầu tiên là nền tảng chính
+    byId.get(id).push(r); // mỗi dòng = một nền tảng; dòng đầu tiên sau khi sắp xếp là nền tảng chính
   }
+  for (const rows of byId.values()) rows.sort((a, b) => platformRank(a) - platformRank(b));
   return byId;
 }
 
@@ -231,7 +234,10 @@ async function main() {
     const rows = gone
       ? [{ ...sheetRows[0], link_xem: "", link_cac_tap: "" }]
       : sheetRows ? [...activeRows, ...engsubRows(m, activeRows)] : [autoRow(m)];
-    const r = rows[0], aniFirst = firstAirMs(m);
+    const aniFirst = firstAirMs(m);
+    // Tên và mô tả lấy từ dòng đầu tiên có điền, vì dòng chính có thể để trống.
+    const title = rows.find((row) => row.ten_viet)?.ten_viet;
+    const description = rows.find((row) => row.mo_ta)?.mo_ta || synopsis(m);
     const ps = rows.map((row) => {
       const gt = vnMs(row.gio_tap1_vn);
       if (row.gio_tap1_vn && gt === null) console.warn(`Phim ${m.id}: gio_tap1_vn "${row.gio_tap1_vn}" sai định dạng, dùng giờ AniList. Cần dạng 2026-10-04 21:30`);
@@ -258,7 +264,7 @@ async function main() {
     shows.push({
       id: m.id,
       s: m.season && m.seasonYear ? `${m.season.toLowerCase()}-${m.seasonYear}` : seasonOf(Date.parse(ps[0].first)),
-      t: r.ten_viet || m.title.english || m.title.romaji,
+      t: title || m.title.english || m.title.romaji,
       alt: m.title.romaji,
       ...(m.title.english ? { en: m.title.english } : {}),
       first: ps[0].first,
@@ -267,7 +273,7 @@ async function main() {
       v: m.popularity || 0,
       g: m.genres || [],
       ps,
-      ...((r.mo_ta || synopsis(m)) ? { d: r.mo_ta || synopsis(m) } : {}),
+      ...(description ? { d: description } : {}),
       f: FORMAT[m.format] || m.format || "TV Series",
       ...(trailerOf(m) ? { tr: trailerOf(m) } : {}),
       ...(m.isAdult ? { nsfw: true } : {}),
