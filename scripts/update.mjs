@@ -68,6 +68,7 @@ function parseEps(text) {
 // Phim quá dài, không vừa một ô trong Sheet: link từng tập để trong data/*.csv (cột tap,video_id).
 const LONG_SERIES = [
   { id: 235, platform: "POPS Anime", file: "tap-conan-pops-anime.csv" },
+  { id: 20, platform: "POPS Anime", file: "tap-naruto-pops-anime.csv" },
   { id: 2471, platform: "POPS Kids", file: "tap-doraemon-pops-kids.csv", to: 185 },
   { id: 8687, platform: "POPS Kids", file: "tap-doraemon-pops-kids.csv", from: 186 },
 ];
