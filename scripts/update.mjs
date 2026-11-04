@@ -78,6 +78,12 @@ async function loadPopsEpisodes() {
 }
 const popsEpisodes = await loadPopsEpisodes();
 
+// AniList chưa có tổng số tập: lấy theo tập cao nhất đã có link, nếu ít link thì theo tập AniList đã chiếu.
+function unknownEpisodeCount(m, ps) {
+  const linked = Math.max(0, ...ps.flatMap((p) => Object.keys(p.e || {}).map(Number)));
+  return linked > 12 ? linked : Math.max(12, linked, (m.nextAiringEpisode?.episode ?? 1) - 1);
+}
+
 // Playlist đánh số nối tiếp mùa trước: link_cac_tap có "29|..." dù phim chỉ có 10 tập.
 // Đưa về tập 1, 2... để tính lịch, và giữ lại số lệch để website hiện đúng số như YouTube.
 // Không điền lech_tap thì lấy theo số tập nhỏ nhất trong link_cac_tap.
@@ -305,8 +311,7 @@ async function main() {
       alt: m.title.romaji,
       ...(m.title.english ? { en: m.title.english } : {}),
       first: ps[0].first,
-      // AniList chưa có tổng số tập thì lấy theo tập cao nhất đã có link, tối thiểu 12.
-      eps: m.episodes || Math.max(12, ...ps.flatMap((p) => Object.keys(p.e || {}).map(Number))),
+      eps: m.episodes || unknownEpisodeCount(m, ps),
       ...(m.episodes ? {} : { eu: 1 }), // AniList chưa có tổng số tập
       v: m.popularity || 0,
       g: m.genres || [],
