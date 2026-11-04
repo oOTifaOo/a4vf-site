@@ -79,7 +79,12 @@ export const STATUS = {
 export const LANGUAGES = [
   { value: 'all', label: 'Tất cả', icon: 'video_library' },
   { value: 'vi', label: 'Vietsub', icon: 'closed_caption' },
-  { value: 'dub', label: 'Lồng tiếng', icon: 'record_voice_over' },
+];
+
+/** Bộ lọc Bản dịch của trang Tìm Anime; các trang khác chỉ lọc Tất cả và Vietsub. */
+export const SEARCH_LANGUAGES = [
+  { value: 'vi', label: 'Vietsub' },
+  { value: 'dub', label: 'Lồng tiếng' },
 ];
 
 export const SORTS = [
