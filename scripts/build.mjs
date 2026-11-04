@@ -19,7 +19,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 const PORT = Number(process.env.BUILD_PORT) || 8199;
 const ORIGIN = `http://localhost:${PORT}`;
-const STATIC_FILES = ["robots.txt", "favicon.ico", "og-image.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "manifest.webmanifest"];
+const STATIC_FILES = ["robots.txt", "favicon.ico", "og-image.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "manifest.webmanifest", "anh.php"];
 /** Số mùa gần nhất tính cả mùa hiện tại giữ trong data.js. Phim cũ hơn vào kho tra cứu. */
 const RECENT_SEASONS = 4;
 const now = Date.now();
@@ -96,7 +96,7 @@ function sitemap({ seasons, shows }) {
   const listed = shows.filter(isIndexable);
   const keys = new Set(listed.map((show) => show.season));
   const entries = [
-    [PATHS.home, today], [PATHS.search, today], [PATHS.about, ""],
+    [PATHS.home, today], [PATHS.search, today], [PATHS.tierList, ""], [PATHS.about, ""],
     ...PLATFORM_PAGES.map((platform) => [platformPath(platform.slug), today]),
     ...seasons.filter((season) => keys.has(season.key)).map((season) => [seasonPath(season.key), today]),
     ...listed.map((show) => [showPath(show.id, show.title), lastChange(show)]),
@@ -197,7 +197,7 @@ async function main() {
   await writeFile(join(dist, "sitemap.xml"), sitemap(catalog));
 
   const paths = [
-    PATHS.home, PATHS.seasons, PATHS.search, PATHS.about,
+    PATHS.home, PATHS.seasons, PATHS.search, PATHS.tierList, PATHS.about,
     ...PLATFORM_PAGES.map((platform) => platformPath(platform.slug)),
     ...catalog.seasons.map((season) => seasonPath(season.key)),
     ...catalog.shows.map((show) => showPath(show.id, show.title)),
