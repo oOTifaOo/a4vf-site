@@ -170,7 +170,8 @@ function episodeButton(platform, airing, episode, selectedEpisode) {
 
   // Tập mới chưa có video nhúng thì mở playlist YouTube để người xem không phải đợi cập nhật.
   const opensPlaylist = !platform.episodeLinks[episode] && YOUTUBE_URL.test(url);
-  const latest = episode === airing.aired && (!selectedEpisode || opensPlaylist);
+  // Chỉ làm nổi bật tập mới khi tập đó có link riêng.
+  const latest = episode === airing.aired && !selectedEpisode && Boolean(platform.episodeLinks[episode]);
   const label = opensPlaylist ? `Xem tập ${number} trong playlist YouTube, đã chiếu ${when}` : `Xem tập ${number}, đã chiếu ${when}`;
   return html`<li><a class="btn episode ${latest ? 'episode--latest' : ''}" ${externalLink(url)}
     aria-label="${label}" data-bs-title="${opensPlaylist ? 'Mở playlist YouTube' : when}">${number}</a></li>`;
