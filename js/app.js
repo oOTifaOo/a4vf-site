@@ -3,7 +3,7 @@
 import { emptyState } from './components/common.js';
 import { notFoundPage } from './components/not-found.js';
 import { PLATFORM_PAGES } from './config.js';
-import { loadArchivedShow } from './domain/archive.js';
+import { loadArchivedShow, loadSeasonIfArchived } from './domain/archive.js';
 import { defaultSeason, loadCatalog } from './domain/catalog.js';
 import { isFollowing } from './domain/follow.js';
 import { aboutSeo, homeSeo, mineSeo, notFoundSeo, platformSeo, searchSeo, seasonSeo, showSeo, tierListSeo } from './domain/seo.js';
@@ -32,6 +32,7 @@ const state = {
   home: { language: 'vi', free: false, mine: false },
   list: { language: 'all', free: false, mine: false, sort: 'views', seasonKey: '', query: '' },
   search: { query: '', genre: '', platform: '', free: false, limit: 24 },
+  tier: { language: null, mine: false, query: '', withTitles: true },
 };
 
 let catalog;
@@ -56,6 +57,7 @@ function mountNotFound() {
 
 /** Phim cũ chưa có trong data.js: giữ nội dung dựng sẵn, tải dữ liệu mùa đó rồi vẽ lại. */
 const archiveChecked = new Set();
+const tierSeasonsLoaded = new Set();
 
 function renderShow(id) {
   const show = catalog.shows.find((item) => item.id === id);
@@ -121,7 +123,16 @@ const ROUTES = [
     pattern: /^\/tier-list$/,
     nav: 'tier-list',
     seo: tierListSeo,
-    render: () => mountTierList(outlet, context()),
+    render: () => {
+      const seasonKey = seasonKeyFromSlug(new URLSearchParams(location.search).get('mua') ?? '');
+      const view = mountTierList(outlet, context(), { seasonKey, shared: location.hash.slice(1) });
+      // Mùa cũ không nằm trong data.js: tải xong thì vẽ lại.
+      if (seasonKey && !tierSeasonsLoaded.has(seasonKey)) {
+        tierSeasonsLoaded.add(seasonKey);
+        loadSeasonIfArchived(catalog, seasonKey).then((added) => { if (added) route(); });
+      }
+      return view;
+    },
   },
   {
     pattern: /^\/tim-anime$/,
