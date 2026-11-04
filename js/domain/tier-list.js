@@ -6,7 +6,7 @@ const LINK_VERSION = '1';
 const MAX_LINK_LENGTH = 8000;
 
 export const MAX_TIERS = 10;
-export const MAX_LABEL_LENGTH = 12;
+export const MAX_LABEL_LENGTH = 20;
 export const MAX_TITLE_LENGTH = 60;
 
 /** Bộ hàng mặc định. Đổi tên hoặc màu ở đây sẽ áp dụng cho các bảng tạo mới. */
