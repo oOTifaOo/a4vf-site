@@ -15,10 +15,12 @@ export const REMOTE_DATA_URL = 'https://ootifaoo.github.io/a4vf-site/data.js';
 export const PLATFORM_PAGES = [
   { slug: 'muse-viet-nam', label: 'Muse Việt Nam', names: ['Muse Việt Nam'], note: 'kênh YouTube miễn phí' },
   { slug: 'ani-one-viet-nam', label: 'Ani-One Việt Nam', names: ['Ani-one Việt Nam'], note: 'kênh YouTube miễn phí' },
+  { slug: 'pops', label: 'POPS', names: ['POPS'], note: 'kênh YouTube miễn phí' },
   { slug: 'netflix', label: 'Netflix', names: ['Netflix'], note: 'dịch vụ trả phí' },
   { slug: 'fpt-play', label: 'FPT Play', names: ['FPT Play'], note: 'dịch vụ có quảng cáo và gói trả phí' },
   { slug: 'crunchyroll', label: 'Crunchyroll', names: ['Crunchyroll'], note: 'dịch vụ anime có phụ đề tiếng Việt' },
   { slug: 'iq', label: 'iQIYI', names: ['iQ'], note: 'dịch vụ phim châu Á' },
+  { slug: 'bilibili-tv', label: 'Bilibili TV', names: ['Bilibili TV'], note: 'dịch vụ xem anime có phụ đề tiếng Việt' },
 ];
 
 export const CONTACT_EMAIL = 'a4vtranslation@gmail.com';
