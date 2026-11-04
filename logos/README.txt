@@ -16,6 +16,9 @@ Danh sách đang dùng trên website (tên nền tảng -> tên file). Dấu * l
   Disney Plus                     -> disney-plus.png
   iQ                              -> iq.png
   Hulu                            -> hulu.png
+  POPS                            -> pops.png *
+  Bilibili TV                     -> bilibili-tv.png *
+  Tropics                         -> tropics.png *
 
 Nếu chưa có file, trang tự hiện ô màu kèm chữ viết tắt.
 Hai tên khác nhau dùng chung một logo: thêm vào LOGO_ALIASES trong js/config.js.
