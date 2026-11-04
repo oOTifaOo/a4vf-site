@@ -14,11 +14,22 @@ Danh sách đang dùng trên website (tên nền tảng -> tên file). Dấu * l
   HIDIVE                          -> hidive.png
   Prime Video, Amazon Prime Video -> prime-video.png
   Disney Plus                     -> disney-plus.png
-  iQ                              -> iq.png
+  iQ                              -> iq.png *
   Hulu                            -> hulu.png
   POPS                            -> pops.png *
   Bilibili TV                     -> bilibili-tv.png *
   Tropics                         -> tropics.png *
+  Bilibili                        -> bilibili.png *
+  iQIYI                           -> iqiyi.png *
+  WeTV                            -> wetv.png *
+  Apple TV                        -> apple-tv.png *
+  Yuewen                          -> yuewen.png *
+  It's Anime                      -> its-anime.png *
+  Galaxy Play                     -> galaxy-play.png *
+  MyTV                            -> mytv.png *
+  Danet                           -> danet.png *
+  TV360                           -> tv360.png *
+  VieON                           -> vieon.png *
 
 Nếu chưa có file, trang tự hiện ô màu kèm chữ viết tắt.
 Hai tên khác nhau dùng chung một logo: thêm vào LOGO_ALIASES trong js/config.js.
