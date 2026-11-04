@@ -29,8 +29,8 @@ function parseCSV(t) {
 }
 
 const hidden = new Set();
-// Hai kênh YouTube miễn phí luôn là nền tảng chính, còn lại giữ thứ tự trong Sheet.
-const platformRank = ({ nen_tang: name = "" }) => (/muse/i.test(name) ? 0 : /ani-?one/i.test(name) ? 1 : 2);
+// Các kênh YouTube miễn phí luôn là nền tảng chính, còn lại giữ thứ tự trong Sheet.
+const platformRank = ({ nen_tang: name = "" }) => (/muse/i.test(name) ? 0 : /ani-?one/i.test(name) ? 1 : /^pops$/i.test(name) ? 2 : 3);
 async function loadSheet() {
   const url = process.env.SHEET_CSV_URL;
   const text = url
@@ -65,21 +65,18 @@ function parseEps(text) {
   return e;
 }
 
-// Phim quá dài, không vừa một ô trong Sheet: link từng tập để trong data/*.csv (cột tap,video_id).
-const LONG_SERIES = [
-  { id: 235, platform: "POPS Anime", file: "tap-conan-pops-anime.csv" },
-  { id: 20, platform: "POPS Anime", file: "tap-naruto-pops-anime.csv" },
-  { id: 2471, platform: "POPS Kids", file: "tap-doraemon-pops-kids.csv", to: 185 },
-  { id: 8687, platform: "POPS Kids", file: "tap-doraemon-pops-kids.csv", from: 186 },
-];
-async function longSeriesLinks({ file, from = 1, to = Infinity }) {
-  const text = await readFile(new URL(`../data/${file}`, import.meta.url), "utf8");
-  return text.split(/\r?\n/).slice(1).map((line) => line.split(","))
-    .filter(([tap, id]) => id && Number(tap) >= from && Number(tap) <= to)
-    .map(([tap, id]) => `${tap}|https://youtu.be/${id}`).join("\n");
+// Phim của POPS: link từng tập để trong data/tap-pops.csv (anilist_id,tap,video_id), vì nhiều phim quá dài cho một ô Sheet.
+async function loadPopsEpisodes() {
+  const text = await readFile(new URL("../data/tap-pops.csv", import.meta.url), "utf8");
+  const byId = new Map();
+  for (const line of text.split(/\r?\n/).slice(1)) {
+    const [id, tap, video] = line.split(",");
+    if (!video) continue;
+    byId.set(Number(id), `${byId.get(Number(id)) ?? ""}${tap}|https://youtu.be/${video}\n`);
+  }
+  return byId;
 }
-const longLinks = new Map(await Promise.all(LONG_SERIES.map(async (series) =>
-  [`${series.id}|${series.platform}`, await longSeriesLinks(series)])));
+const popsEpisodes = await loadPopsEpisodes();
 
 // Playlist đánh số nối tiếp mùa trước: link_cac_tap có "29|..." dù phim chỉ có 10 tập.
 // Đưa về tập 1, 2... để tính lịch, và giữ lại số lệch để website hiện đúng số như YouTube.
@@ -284,7 +281,7 @@ async function main() {
       if (!first) return null;
       // Link điền tay trong link_cac_tap được ưu tiên hơn link tự tạo
       const link = cleanUrl(row.link_xem), count = m.episodes || 12;
-      const episodeText = longLinks.get(`${m.id}|${row.nen_tang}`) || row.link_cac_tap;
+      const episodeText = (/^pops$/i.test(row.nen_tang) && popsEpisodes.get(m.id)) || row.link_cac_tap;
       const manual = alignEpisodes(parseEps(episodeText), count, Number(row.lech_tap) || 0);
       const e = { ...fptEpisodes(link, count), ...netflixEpisodes(link, count), ...manual.links };
       const ms = parseMilestones(row.gio_cac_tap);
