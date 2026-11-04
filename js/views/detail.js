@@ -163,17 +163,17 @@ function episodeButton(platform, airing, episode, selectedEpisode) {
   }
 
   const url = platform.episodeLinks[episode] || platform.url;
-  // Phim đã phát được trên trang thì tập chưa có video riêng không đưa người xem sang YouTube.
-  const waitingForVideo = selectedEpisode && !platform.episodeLinks[episode] && YOUTUBE_URL.test(url);
-  if (!isExternalUrl(url) || waitingForVideo) {
-    const label = waitingForVideo ? 'Chưa có video nhúng' : 'Chưa có link xem';
+  if (!isExternalUrl(url)) {
     return html`<li><button class="btn episode episode--upcoming" type="button" aria-disabled="true"
-      aria-label="Tập ${number}, ${label.toLowerCase()}" data-bs-title="${label}">${number}</button></li>`;
+      aria-label="Tập ${number}, chưa có link xem" data-bs-title="Chưa có link xem">${number}</button></li>`;
   }
 
-  const latest = episode === airing.aired && !selectedEpisode;
+  // Tập mới chưa có video nhúng thì mở playlist YouTube để người xem không phải đợi cập nhật.
+  const opensPlaylist = !platform.episodeLinks[episode] && YOUTUBE_URL.test(url);
+  const latest = episode === airing.aired && (!selectedEpisode || opensPlaylist);
+  const label = opensPlaylist ? `Xem tập ${number} trong playlist YouTube, đã chiếu ${when}` : `Xem tập ${number}, đã chiếu ${when}`;
   return html`<li><a class="btn episode ${latest ? 'episode--latest' : ''}" ${externalLink(url)}
-    aria-label="Xem tập ${number}, đã chiếu ${when}" data-bs-title="${when}">${number}</a></li>`;
+    aria-label="${label}" data-bs-title="${opensPlaylist ? 'Mở playlist YouTube' : when}">${number}</a></li>`;
 }
 
 function playerFacade(platform, episode) {
