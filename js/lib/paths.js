@@ -9,6 +9,7 @@ export const PATHS = {
   search: '/tim-anime',
   mine: '/phim-cua-toi',
   about: '/gioi-thieu',
+  tierList: '/tier-list',
 };
 
 export const platformPath = (slug) => `/nen-tang/${slug}`;
