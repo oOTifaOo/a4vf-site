@@ -75,6 +75,11 @@ Phim có trong Sheet được `scripts/update.mjs` thêm các nền tảng lấy
 ## Sửa thông tin chung
 Mở `index.html`, tìm phần footer để đổi link Facebook và email liên hệ.
 
+## Đo lượng truy cập
+Website chỉ gửi lượt xem trang sang Google Analytics 4 để đếm người truy cập và số người đang online. Mã đo nằm ở `GA_MEASUREMENT_ID` trong `js/config.js`, code nằm trong `js/ui/analytics.js` và chỉ chạy trên a4vf.net, nên chạy thử trên máy không tính vào số liệu.
+
+Code tự gửi lượt xem kể cả khi đổi trang không tải lại, vì vậy Enhanced measurement của GA4 phải để tắt, nếu không sẽ đếm đôi.
+
 ## Sửa giao diện
 | Việc | Sửa ở đâu |
 |---|---|
