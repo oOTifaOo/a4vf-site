@@ -296,6 +296,46 @@ time,
   .not-found__mascot { animation: none; }
 }
 
+.search-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.search-filter .form-label {
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.search-filter .form-select {
+  min-height: var(--target);
+  background-color: var(--surface);
+}
+
+.search-filter--free {
+  display: flex;
+}
+
+.search-filters__clear {
+  justify-self: start;
+  min-height: var(--target);
+  padding-inline: 0.25rem;
+  color: var(--accent-text);
+}
+
+.search-filters__clear[hidden] {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .search-filters {
+    grid-template-columns: minmax(0, 14rem) minmax(0, 14rem) auto auto 1fr;
+  }
+}
+
 .site-menu .dropdown-item {
   display: flex;
   align-items: center;
@@ -929,21 +969,6 @@ time,
 /* The 16px size stops iOS from zooming in when the field gets focus. */
 .search-panel .form-control {
   font-size: 1rem;
-}
-
-.genre-list {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  scrollbar-width: none;
-}
-
-.genre-chip {
-  flex: none;
-  min-height: 36px;
-  border-radius: 999px;
-  background: var(--surface);
 }
 
 /* ---------- Show page ---------- */
