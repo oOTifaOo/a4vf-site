@@ -4,13 +4,12 @@ import { emptyState, icon } from '../components/common.js';
 import { archiveCard, SHOW_GRID_CLASS, showGrid } from '../components/show-card.js';
 import { loadArchiveIndex } from '../domain/archive.js';
 import { freeToggle } from '../components/filters.js';
-import { LANGUAGES, PLATFORM_PAGES } from '../config.js';
+import { PLATFORM_PAGES, SEARCH_LANGUAGES } from '../config.js';
 import { allGenres, searchArchive, searchShows } from '../domain/shows.js';
 import { html, mount } from '../lib/html.js';
 
 const PAGE_SIZE = 24;
 const DEFAULT_LANGUAGE = 'vi';
-const LANGUAGE_OPTIONS = LANGUAGES.filter(({ value }) => value !== 'all');
 
 const selectFilter = (name, label, allLabel, options, selected) => html`
   <div class="search-filter">
@@ -35,7 +34,7 @@ export function mountSearch(root, { catalog, state }) {
       <div class="search-filters">
         ${selectFilter('genre', 'Thể loại', 'Tất cả thể loại', allGenres(catalog.shows).map((genre) => ({ value: genre, label: genre })), filters.genre)}
         ${selectFilter('platform', 'Nền tảng', 'Tất cả nền tảng', PLATFORM_PAGES.map(({ slug, label }) => ({ value: slug, label })), filters.platform)}
-        ${selectFilter('language', 'Bản dịch', 'Tất cả', LANGUAGE_OPTIONS, filters.language)}
+        ${selectFilter('language', 'Bản dịch', 'Tất cả', SEARCH_LANGUAGES, filters.language)}
         <div class="search-filter search-filter--free">
           ${freeToggle(filters.free)}
         </div>
