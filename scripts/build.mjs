@@ -53,6 +53,7 @@ async function writeData({ rawSeasons, rawShows, shows }) {
   await writeFile(join(dist, "kho.json"), JSON.stringify(older.map((raw) => ({
     id: raw.id, s: raw.s, t: raw.t, ...(raw.en ? { en: raw.en } : {}), alt: raw.alt, ...(raw.img ? { img: raw.img } : {}), g: raw.g,
     p: [...new Set(raw.ps.filter((platform) => !/eng/i.test(platform.lang)).map((platform) => platform.n))],
+    f: [...new Set(raw.ps.filter((platform) => platform.free).map((platform) => platform.n))],
   }))));
   await mkdir(join(dist, "du-lieu"), { recursive: true });
   for (const key of new Set(older.map((raw) => raw.s))) {
