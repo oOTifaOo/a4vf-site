@@ -16,6 +16,8 @@ export const PATHS = {
 export const tierListPath = (key) => `${PATHS.tierList}?mua=${seasonPath(key).split('/').pop()}`;
 
 export const platformPath = (slug) => `/nen-tang/${slug}`;
+export const platformHeading = ({ label, dubbed }) => `Anime ${dubbed ? 'lồng tiếng' : 'Vietsub'} trên ${label}`;
+export const platformReleaseText = ({ dubbed }) => (dubbed ? 'có bản lồng tiếng' : 'có phụ đề tiếng Việt');
 
 const SEASON_SLUGS = { winter: 'dong', spring: 'xuan', summer: 'ha', fall: 'thu' };
 
