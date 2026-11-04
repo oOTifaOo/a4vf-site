@@ -1,234 +1,649 @@
-/* "Tier list": người xem xếp hạng anime trong mùa rồi tải hoặc chia sẻ ảnh kết quả. */
+/* "Tier List": kéo thả hoặc chạm để xếp phim của một mùa, rồi xuất ảnh và link chia sẻ.
+   Bảng lưu riêng theo từng mùa trong trình duyệt. Link chia sẻ mở ở chế độ chỉ xem. */
 
-import { icon, poster } from '../components/common.js';
-import { loadSeasonIfArchived } from '../domain/archive.js';
-import { TIERS } from '../config.js';
+import { emptyState, icon, poster } from '../components/common.js';
+import { bindFilters, languageFilter, mineToggle } from '../components/filters.js';
+import { SEASON_ICONS } from '../config.js';
+import { defaultSeason } from '../domain/catalog.js';
+import { selectSeasonShows } from '../domain/shows.js';
+import {
+  MAX_LABEL_LENGTH,
+  MAX_TIERS,
+  MAX_TITLE_LENGTH,
+  createBoard,
+  createTier,
+  decodeBoard,
+  encodeBoard,
+  hasPlacedShows,
+  inkOn,
+  loadBoard,
+  moveShow,
+  placedIds,
+  removeShow,
+  removeTier,
+  saveBoard,
+  shiftTier,
+  tierOfShow,
+} from '../domain/tier-list.js';
 import { html, mount } from '../lib/html.js';
-import { hasVietnameseRelease } from '../lib/paths.js';
+import { showPath, tierListPath } from '../lib/paths.js';
+import { notify } from '../ui/feedback.js';
+import { renderTierImage } from '../ui/tier-export.js';
 
-const STORAGE_PREFIX = 'a4vf_tier_';
-const SEASON_FAMILIES = ['winter', 'spring', 'summer', 'fall'];
+const SORTABLE_SRC = new URL('../lib/Sortable.min.js', import.meta.url).href;
 
-function currentSeasonKey(seasons) {
-  const now = new Date();
-  const key = `${SEASON_FAMILIES[Math.floor(now.getUTCMonth() / 3)]}-${now.getUTCFullYear()}`;
-  return seasons.some((season) => season.key === key) ? key : seasons[0].key;
+/** Kéo thả chỉ là thêm: nếu thư viện không tải được, chạm để xếp vẫn hoạt động. */
+function loadSortable() {
+  if (window.Sortable) return Promise.resolve(window.Sortable);
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = SORTABLE_SRC;
+    script.onload = () => resolve(window.Sortable ?? null);
+    script.onerror = () => resolve(null);
+    document.head.append(script);
+  });
 }
 
-function loadBoard(key) {
+function seasonStep(season, direction) {
+  const name = direction === 'prev' ? 'chevron_left' : 'chevron_right';
+  const label = direction === 'prev' ? 'Mùa trước' : 'Mùa sau';
+  if (!season) {
+    return html`<button class="btn btn-icon" type="button" disabled aria-label="${label}">${icon(name)}</button>`;
+  }
+  return html`<a class="btn btn-icon" href="${tierListPath(season.key)}" aria-label="${label}: ${season.name}"
+    data-bs-title="${season.name}">${icon(name)}</a>`;
+}
+
+function tierHeader(seasons, index, { readOnly }) {
+  const season = seasons[index];
+  return html`
+    <header class="season-header" data-season="${season.family}">
+      ${readOnly ? '' : seasonStep(seasons[index - 1], 'prev')}
+      <div class="season-header__title">
+        ${icon(SEASON_ICONS[season.family], 'season-header__icon')}
+        <div>
+          <h1 id="tier-title" tabindex="-1">Tier List</h1>
+          <p>${season.name}</p>
+        </div>
+      </div>
+      ${readOnly ? '' : seasonStep(seasons[index + 1], 'next')}
+    </header>`;
+}
+
+function tierItem(show, { readOnly, selected }) {
+  if (readOnly) {
+    return html`<a class="tier-item" href="${showPath(show.id, show.title)}" title="${show.title}">
+      ${poster(show, 'poster--fill')}<span class="visually-hidden">${show.title}</span></a>`;
+  }
+  return html`<button class="tier-item ${selected ? 'is-selected' : ''}" type="button" data-item="${show.id}"
+    title="${show.title}" aria-pressed="${String(Boolean(selected))}">
+    ${poster(show, 'poster--fill')}<span class="visually-hidden">${show.title}</span></button>`;
+}
+
+function tierRow(tier, showsById, options) {
+  const label = tier.label || 'Hàng chưa đặt tên';
+  return html`
+    <section class="tier-row" aria-label="${label}">
+      <h2 class="tier-row__label" style="background:${tier.color};color:${inkOn(tier.color)}">${tier.label}</h2>
+      <div class="tier-row__items" data-tier="${tier.id}">
+        ${tier.items.map((id) => tierItem(showsById.get(id), { ...options, selected: options.selectedId === id }))}
+      </div>
+    </section>`;
+}
+
+function editorRow(tier, index, count) {
+  return html`
+    <li class="tier-editor__row" data-editor-tier="${tier.id}">
+      <input class="form-control tier-editor__color" type="color" value="${tier.color}" data-tier-color
+        aria-label="Màu hàng ${index + 1}">
+      <input class="form-control" type="text" value="${tier.label}" maxlength="${MAX_LABEL_LENGTH}" data-tier-label
+        aria-label="Tên hàng ${index + 1}" autocomplete="off">
+      <button class="btn btn-icon" type="button" data-tier-up aria-label="Đưa hàng lên" ${index === 0 ? 'disabled' : ''}>${icon('arrow_upward')}</button>
+      <button class="btn btn-icon" type="button" data-tier-down aria-label="Đưa hàng xuống" ${index === count - 1 ? 'disabled' : ''}>${icon('arrow_downward')}</button>
+      <button class="btn btn-icon" type="button" data-tier-remove aria-label="Xoá hàng" ${count === 1 ? 'disabled' : ''}>${icon('delete')}</button>
+    </li>`;
+}
+
+function shareDialog() {
+  return html`
+    <dialog class="tier-dialog" id="tier-dialog" aria-labelledby="tier-dialog-title">
+      <header class="tier-dialog__head">
+        <h2 id="tier-dialog-title">Chia sẻ tier list</h2>
+        <button class="btn btn-icon" type="button" data-dialog-close aria-label="Đóng">${icon('close')}</button>
+      </header>
+      <div class="tier-dialog__body">
+        <div class="tier-dialog__preview" id="tier-preview"></div>
+        <p class="tier-dialog__status" id="tier-export-status" role="status"></p>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="tier-with-titles">
+          <label class="form-check-label" for="tier-with-titles">Kèm tên phim trong ảnh</label>
+        </div>
+        <div class="tier-actions">
+          <a class="btn btn-accent disabled" id="tier-download" aria-disabled="true">${icon('download')}Tải ảnh</a>
+          <button class="btn" type="button" id="tier-share-file" hidden disabled>${icon('share')}Chia sẻ ảnh</button>
+        </div>
+        <p class="tier-dialog__hint">Nếu đang mở trong ứng dụng Facebook hoặc Zalo mà không tải được, hãy nhấn giữ ảnh ở trên để lưu.</p>
+        <label class="form-label" for="tier-link">Link xem tier list</label>
+        <div class="input-group">
+          <input class="form-control" type="text" id="tier-link" readonly>
+          <button class="btn" type="button" id="tier-copy-link">${icon('content_copy')}Sao chép</button>
+        </div>
+      </div>
+    </dialog>`;
+}
+
+async function copyText(input) {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_PREFIX + key)) ?? {};
+    await navigator.clipboard.writeText(input.value);
+    return true;
   } catch {
-    return {};
+    input.focus();
+    input.select();
+    return document.execCommand?.('copy') ?? false;
   }
 }
 
-function saveBoard(key, board) {
-  try {
-    localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(board));
-  } catch {
-    // Trình duyệt chặn lưu thì bảng vẫn dùng được đến khi rời trang.
+/** Hộp thoại chia sẻ, dùng chung cho bảng đang xếp và bảng mở từ link. */
+function createShareDialog(root, { getExport, getLink, fileName, withTitles, onWithTitles }) {
+  const dialog = root.querySelector('#tier-dialog');
+  const preview = dialog.querySelector('#tier-preview');
+  const status = dialog.querySelector('#tier-export-status');
+  const download = dialog.querySelector('#tier-download');
+  const shareFile = dialog.querySelector('#tier-share-file');
+  const linkInput = dialog.querySelector('#tier-link');
+  const titles = dialog.querySelector('#tier-with-titles');
+
+  let imageUrl = '';
+  let imageFile = null;
+  let renderId = 0;
+
+  function setReady(ready) {
+    download.classList.toggle('disabled', !ready);
+    download.setAttribute('aria-disabled', String(!ready));
+    shareFile.disabled = !ready;
   }
+
+  function releaseImage() {
+    if (imageUrl) URL.revokeObjectURL(imageUrl);
+    imageUrl = '';
+    imageFile = null;
+    download.removeAttribute('href');
+  }
+
+  async function renderImage() {
+    renderId += 1;
+    const id = renderId;
+    setReady(false);
+    releaseImage();
+    mount(preview, html`<div class="spinner-border" role="status"><span class="visually-hidden">Đang tạo ảnh…</span></div>`);
+    status.textContent = 'Đang tạo ảnh…';
+
+    try {
+      const { blob, missing } = await renderTierImage(getExport(titles.checked), (done, total) => {
+        if (id === renderId) status.textContent = `Đang tải poster ${done}/${total}…`;
+      });
+      if (id !== renderId) return;
+
+      imageUrl = URL.createObjectURL(blob);
+      imageFile = new File([blob], fileName, { type: 'image/png' });
+      download.href = imageUrl;
+      download.download = fileName;
+      mount(preview, html`<img src="${imageUrl}" alt="Ảnh tier list đã tạo">`);
+      status.textContent = missing ? `${missing} poster không tải được nên hiện bằng bìa thay thế.` : '';
+      shareFile.hidden = !navigator.canShare?.({ files: [imageFile] });
+      setReady(true);
+    } catch (error) {
+      console.error(error);
+      if (id !== renderId) return;
+      mount(preview, emptyState('error', 'Không tạo được ảnh. Hãy thử lại.'));
+      status.textContent = '';
+    }
+  }
+
+  dialog.addEventListener('click', async ({ target }) => {
+    if (target === dialog || target.closest('[data-dialog-close]')) dialog.close();
+
+    if (target.closest('#tier-copy-link')) {
+      status.textContent = (await copyText(linkInput)) ? 'Đã sao chép link.' : 'Hãy tự sao chép link trong ô.';
+    }
+
+    if (target.closest('#tier-share-file') && imageFile) {
+      try {
+        await navigator.share({ files: [imageFile], title: 'Tier List A4VFamily' });
+      } catch (error) {
+        if (error.name !== 'AbortError') status.textContent = 'Không chia sẻ được. Hãy dùng nút Tải ảnh.';
+      }
+    }
+  });
+
+  download.addEventListener('click', (event) => {
+    if (!imageUrl) event.preventDefault();
+  });
+
+  titles.addEventListener('change', () => {
+    onWithTitles(titles.checked);
+    renderImage();
+  });
+
+  dialog.addEventListener('close', () => {
+    renderId += 1;
+    releaseImage();
+    mount(preview, html``);
+  });
+
+  return {
+    open() {
+      titles.checked = withTitles();
+      linkInput.value = getLink();
+      dialog.showModal();
+      renderImage();
+    },
+  };
 }
 
-const tile = (show, selectedId) => html`
-  <div class="tier-tile" role="button" tabindex="0" draggable="true" data-tile="${show.id}" title="${show.title}"
-    aria-label="${show.title}" aria-pressed="${show.id === selectedId}">
-    ${poster(show, 'poster--fill')}
-  </div>`;
-
-export function mountTierList(root, { catalog }) {
-  const seasons = [...catalog.seasons].reverse();
-  let seasonKey = currentSeasonKey(seasons);
-  let board = loadBoard(seasonKey);
-  let selectedId = null;
+function mountShared(root, { catalog, state }, season, seasonIndex, seasonShows, board) {
+  const showsById = new Map(seasonShows.map((show) => [show.id, show]));
+  const titleText = board.title || `Tier List ${season.name}`;
 
   mount(root, html`
-    <h1 class="page-title" tabindex="-1">Tạo tier list anime</h1>
-    <p class="tier-intro">Xếp hạng anime trong mùa theo ý bạn, rồi tải ảnh về hoặc chia sẻ với bạn bè.
-      Chạm vào một phim rồi chọn hạng, hoặc kéo thả nếu dùng máy tính.</p>
-    <form class="tier-controls" id="tier-form">
-      <div class="search-filter">
-        <label class="form-label" for="tier-season">Mùa</label>
-        <select class="form-select" id="tier-season">
-          ${seasons.map(({ key, name }) => html`<option value="${key}" ${key === seasonKey ? 'selected' : ''}>${name}</option>`)}
-        </select>
+    <section aria-labelledby="tier-title">
+      ${tierHeader(catalog.seasons, seasonIndex, { readOnly: true })}
+      <div class="tier-shared">
+        <p><strong>${titleText}</strong><br>Đây là tier list được chia sẻ. Bạn có thể xếp bản của riêng mình.</p>
+        <div class="tier-actions">
+          <a class="btn btn-accent" href="${tierListPath(season.key)}">${icon('edit')}Xếp bản của tôi</a>
+          <button class="btn" type="button" id="tier-copy-board">${icon('content_copy')}Sửa từ bản này</button>
+          <button class="btn" type="button" id="tier-open-share">${icon('share')}Chia sẻ</button>
+        </div>
       </div>
-      <div class="search-filter tier-controls__title">
-        <label class="form-label" for="tier-title">Tên bảng</label>
-        <input class="form-control" id="tier-title" maxlength="60" autocomplete="off">
-      </div>
-    </form>
-    <div class="tier-board" id="tier-board"></div>
-    <div class="tier-actions">
-      <button class="btn btn-primary" type="button" id="tier-make">${icon('image')}Tạo ảnh</button>
-      <button class="btn btn-outline-secondary" type="button" id="tier-reset">${icon('restart_alt')}Xếp lại</button>
-    </div>
-    <p class="tier-status" id="tier-status" role="status"></p>
-    <div class="tier-result" id="tier-result" hidden>
-      <img id="tier-image" alt="Ảnh tier list của bạn">
-      <div class="tier-actions">
-        <a class="btn btn-primary" id="tier-download">${icon('download')}Tải ảnh</a>
-        <button class="btn btn-outline-primary" type="button" id="tier-share" hidden>${icon('share')}Chia sẻ</button>
-      </div>
-    </div>
-    <h2 class="tier-pool-title">Chưa xếp hạng <span id="tier-count"></span></h2>
-    <div class="tier-pool" id="tier-pool" data-tier=""></div>
-    <div class="tier-picker" id="tier-picker" hidden>
-      <span class="tier-picker__name" id="tier-picker-name"></span>
-      <div class="tier-picker__buttons">
-        ${TIERS.map(({ key, color }) => html`<button type="button" data-pick="${key}" style="--tier-color:${color}" aria-label="Xếp hạng ${key}">${key}</button>`)}
-        <button type="button" data-pick="" aria-label="Bỏ xếp hạng">${icon('close')}</button>
-      </div>
-    </div>`);
+      <div class="tier-board">${board.tiers.map((tier) => tierRow(tier, showsById, { readOnly: true }))}</div>
+      ${shareDialog()}
+    </section>`);
 
-  const form = root.querySelector('#tier-form');
-  const titleInput = root.querySelector('#tier-title');
+  const dialog = createShareDialog(root, {
+    getExport: (withTitles) => exportData(board, showsById, season, withTitles),
+    getLink: () => shareUrl(season, board),
+    fileName: `a4vf-tier-list-${season.key}.png`,
+    withTitles: () => state.tier.withTitles,
+    onWithTitles: (value) => { state.tier.withTitles = value; },
+  });
+
+  root.querySelector('#tier-open-share').addEventListener('click', dialog.open);
+  root.querySelector('#tier-copy-board').addEventListener('click', () => {
+    const own = loadBoard(season.key, new Set(showsById.keys()));
+    if (hasPlacedShows(own) && !confirm('Bản bạn đang xếp ở mùa này sẽ bị thay bằng bản được chia sẻ. Tiếp tục?')) return;
+    saveBoard(season.key, board);
+    location.assign(tierListPath(season.key));
+  });
+
+  return null;
+}
+
+function shareUrl(season, board) {
+  return `${location.origin}${tierListPath(season.key)}#${encodeBoard(board)}`;
+}
+
+function exportData(board, showsById, season, withTitles) {
+  return {
+    title: board.title || 'Tier List của tôi',
+    subtitle: season.name,
+    withTitles,
+    tiers: board.tiers.map((tier) => ({
+      label: tier.label,
+      color: tier.color,
+      ink: inkOn(tier.color),
+      shows: tier.items.map((id) => showsById.get(id)),
+    })),
+  };
+}
+
+export function mountTierList(root, { catalog, state }, { seasonKey, shared }) {
+  const season = catalog.seasons.find(({ key }) => key === seasonKey) ?? defaultSeason(catalog, Date.now());
+  const seasonIndex = catalog.seasons.indexOf(season);
+  const seasonShows = catalog.shows.filter((show) => show.season === season.key && !show.nsfw);
+  const showsById = new Map(seasonShows.map((show) => [show.id, show]));
+  const validIds = new Set(showsById.keys());
+
+  if (shared) {
+    const sharedBoard = decodeBoard(shared, validIds);
+    if (sharedBoard) return mountShared(root, { catalog, state }, season, seasonIndex, seasonShows, sharedBoard);
+    mount(root, html`
+      ${emptyState('link_off', 'Link tier list này bị hỏng hoặc không đầy đủ.')}
+      <p class="text-center"><a href="${tierListPath(season.key)}">Tự xếp tier list của bạn</a></p>`);
+    return null;
+  }
+
+  const filters = state.tier;
+  // Mùa chưa có phim Vietsub (ví dụ mùa sắp tới) thì mở với toàn bộ phim, không để kho trống.
+  const hasVietsub = selectSeasonShows(catalog.shows, {
+    seasonKey: season.key, sort: 'views', language: 'vi', mine: false, query: '',
+  }, Date.now()).length > 0;
+  const language = filters.language ?? (hasVietsub ? 'vi' : 'all');
+  const poolFilters = { language, mine: filters.mine };
+
+  const board = loadBoard(season.key, validIds);
+  let selectedId = null;
+  let lastDragAt = 0;
+  let warnedStorage = false;
+
+  mount(root, html`
+    <section class="tier-page" aria-labelledby="tier-title">
+      ${tierHeader(catalog.seasons, seasonIndex, { readOnly: false })}
+
+      <div class="tier-toolbar">
+        <input class="form-control tier-toolbar__title" type="text" id="tier-board-title" maxlength="${MAX_TITLE_LENGTH}"
+          placeholder="Tên bảng (không bắt buộc)" aria-label="Tên bảng" autocomplete="off" value="${board.title}">
+        <div class="tier-actions">
+          <button class="btn btn-accent" type="button" id="tier-open-share">${icon('share')}Xuất ảnh và chia sẻ</button>
+          <button class="btn btn-icon" type="button" id="tier-toggle-editor" aria-expanded="false" aria-controls="tier-editor"
+            aria-label="Sửa hàng" data-bs-title="Sửa hàng">${icon('tune')}</button>
+          <button class="btn btn-icon" type="button" id="tier-reset" aria-label="Xếp lại từ đầu" data-bs-title="Xếp lại từ đầu">${icon('restart_alt')}</button>
+        </div>
+      </div>
+
+      <div class="tier-editor" id="tier-editor" hidden>
+        <ul class="tier-editor__list list-unstyled" id="tier-editor-list"></ul>
+        <button class="btn" type="button" id="tier-add-row">${icon('add')}Thêm hàng</button>
+      </div>
+
+      <form class="filter-bar" id="tier-filters">
+        ${languageFilter(language)}
+        ${mineToggle(filters.mine)}
+        <div class="input-group filter-bar__search">
+          <span class="input-group-text">${icon('search')}</span>
+          <input class="form-control" type="search" id="tier-query" placeholder="Tìm phim trong kho…" aria-label="Tìm trong kho phim"
+            autocomplete="off" enterkeyhint="search" value="${filters.query}">
+        </div>
+      </form>
+
+      <div class="tier-layout">
+        <div class="tier-board" id="tier-board"></div>
+
+        <aside class="tier-pool" aria-label="Kho phim">
+          <div class="tier-pool__picker" id="tier-picker" aria-live="polite"></div>
+          <div class="tier-pool__items" id="tier-pool" data-pool></div>
+        </aside>
+      </div>
+
+      ${shareDialog()}
+    </section>`);
+
   const boardEl = root.querySelector('#tier-board');
-  const pool = root.querySelector('#tier-pool');
-  const picker = root.querySelector('#tier-picker');
-  const status = root.querySelector('#tier-status');
-  const result = root.querySelector('#tier-result');
+  const poolEl = root.querySelector('#tier-pool');
+  const pickerEl = root.querySelector('#tier-picker');
+  const editor = root.querySelector('#tier-editor');
+  const editorList = root.querySelector('#tier-editor-list');
 
-  const seasonName = () => seasons.find(({ key }) => key === seasonKey).name;
-  const shows = () => catalog.shows
-    .filter((show) => show.season === seasonKey && hasVietnameseRelease(show.filterLanguages, show.nsfw))
-    .sort((a, b) => b.popularity - a.popularity);
+  let sortables = [];
+  let Sortable = null;
 
-  function tierShows(key, byId) {
-    return (board[key] ?? []).map((id) => byId.get(id)).filter(Boolean);
-  }
-
-  function draw() {
-    const list = shows();
-    const byId = new Map(list.map((show) => [show.id, show]));
-    const placed = new Set(TIERS.flatMap(({ key }) => tierShows(key, byId).map((show) => show.id)));
-    const rest = list.filter((show) => !placed.has(show.id));
-    mount(boardEl, html`${TIERS.map(({ key, color }) => html`
-      <div class="tier-row">
-        <div class="tier-row__label" style="--tier-color:${color}">${key}</div>
-        <div class="tier-row__items" data-tier="${key}">${tierShows(key, byId).map((show) => tile(show, selectedId))}</div>
-      </div>`)}`);
-    mount(pool, rest.length
-      ? html`${rest.map((show) => tile(show, selectedId))}`
-      : html`<p class="tier-pool__empty">${list.length ? 'Bạn đã xếp hết phim trong mùa này.' : 'Mùa này chưa có phim bản quyền nào.'}</p>`);
-    root.querySelector('#tier-count').textContent = `(${rest.length})`;
-    const show = byId.get(selectedId);
-    picker.hidden = !show;
-    root.querySelector('#tier-picker-name').textContent = show?.title ?? '';
-  }
-
-  function place(id, tier, beforeId = null) {
-    for (const { key } of TIERS) board[key] = (board[key] ?? []).filter((item) => item !== id);
-    if (tier) {
-      const items = board[tier];
-      const index = items.indexOf(beforeId);
-      items.splice(index < 0 ? items.length : index, 0, id);
+  function persist() {
+    if (!saveBoard(season.key, board) && !warnedStorage) {
+      warnedStorage = true;
+      notify(html`Trình duyệt không cho lưu, bảng sẽ mất khi tải lại trang.`);
     }
-    selectedId = null;
-    saveBoard(seasonKey, board);
-    result.hidden = true;
-    draw();
   }
 
-  function openSeason(key) {
-    seasonKey = key;
-    board = loadBoard(key);
-    selectedId = null;
-    result.hidden = true;
-    titleInput.value = board.title ?? `Tier list ${seasonName()}`;
-    draw();
-    loadSeasonIfArchived(catalog, key).then((added) => {
-      if (added && seasonKey === key && root.isConnected) draw();
+  function poolShows() {
+    const placed = placedIds(board);
+    const list = selectSeasonShows(catalog.shows, {
+      seasonKey: season.key, sort: 'views', language: poolFilters.language, mine: poolFilters.mine, query: filters.query,
+    }, Date.now());
+    return list.filter((show) => !placed.has(show.id));
+  }
+
+  function renderPool() {
+    const { scrollLeft, scrollTop } = poolEl;
+    const shows = poolShows();
+    mount(poolEl, shows.length
+      ? html`${shows.map((show) => tierItem(show, { readOnly: false, selected: selectedId === show.id }))}`
+      : html`<p class="tier-pool__empty">${placedIds(board).size ? 'Không còn phim nào trong bộ lọc này.' : 'Không có phim phù hợp.'}</p>`);
+    poolEl.scrollLeft = scrollLeft;
+    poolEl.scrollTop = scrollTop;
+  }
+
+  function renderPicker() {
+    if (!selectedId) {
+      mount(pickerEl, html`<p class="tier-picker__hint">${icon('touch_app')}Chọn một poster rồi chọn hàng, hoặc kéo thả vào bảng.</p>`);
+      return;
+    }
+    const show = showsById.get(selectedId);
+    const placed = tierOfShow(board, selectedId);
+    mount(pickerEl, html`
+      <p class="tier-picker__title" title="${show.title}">${show.title}</p>
+      <div class="tier-picker__tiers">
+        ${board.tiers.map((tier) => html`
+          <button class="tier-picker__tier" type="button" data-place="${tier.id}"
+            style="background:${tier.color};color:${inkOn(tier.color)}"
+            aria-label="Xếp vào hàng ${tier.label || 'chưa đặt tên'}">${tier.label || '–'}</button>`)}
+        ${placed ? html`<button class="btn btn-icon" type="button" data-unplace aria-label="Trả về kho" data-bs-title="Trả về kho">${icon('undo')}</button>` : ''}
+        <button class="btn btn-icon" type="button" data-deselect aria-label="Bỏ chọn">${icon('close')}</button>
+      </div>`);
+  }
+
+  function renderBoard() {
+    mount(boardEl, html`${board.tiers.map((tier) => tierRow(tier, showsById, { readOnly: false, selectedId }))}`);
+    bindSortables();
+  }
+
+  function renderEditor() {
+    mount(editorList, html`${board.tiers.map((tier, index) => editorRow(tier, index, board.tiers.length))}`);
+    root.querySelector('#tier-add-row').disabled = board.tiers.length >= MAX_TIERS;
+  }
+
+  function renderAll() {
+    renderBoard();
+    renderPool();
+    renderPicker();
+    if (!editor.hidden) renderEditor();
+  }
+
+  function select(id) {
+    selectedId = id;
+    root.querySelectorAll('.tier-item.is-selected').forEach((item) => {
+      item.classList.remove('is-selected');
+      item.setAttribute('aria-pressed', 'false');
     });
+    if (id) {
+      const element = root.querySelector(`[data-item="${id}"]`);
+      element?.classList.add('is-selected');
+      element?.setAttribute('aria-pressed', 'true');
+      if (element?.closest('[data-pool]')) element.scrollIntoView({ block: 'nearest', inline: 'center' });
+    }
+    root.querySelector('.tier-page').classList.toggle('has-selection', Boolean(id));
+    renderPicker();
   }
 
-  form.addEventListener('submit', (event) => event.preventDefault());
-  root.querySelector('#tier-season').addEventListener('change', ({ target }) => openSeason(target.value));
-  titleInput.addEventListener('input', () => {
-    board.title = titleInput.value;
-    saveBoard(seasonKey, board);
-  });
+  /** Xếp xong phim từ kho thì tự chọn phim kế tiếp, để xếp cả mùa chỉ bằng vài lần chạm. */
+  function place(id, tierId, beforeId = null) {
+    const fromPool = !tierOfShow(board, id);
+    const poolIds = fromPool ? poolShows().map((show) => show.id) : [];
+    const nextId = poolIds[poolIds.indexOf(id) + 1] ?? null;
 
-  root.addEventListener('click', (event) => {
-    const pick = event.target.closest('[data-pick]');
-    if (pick && selectedId) return place(selectedId, pick.dataset.pick);
-    const item = event.target.closest('[data-tile]');
+    moveShow(board, id, tierId, beforeId);
+    persist();
+    const keepSelected = fromPool ? nextId : null;
+    selectedId = keepSelected;
+    renderBoard();
+    renderPool();
+    select(keepSelected);
+  }
+
+  function bindSortables() {
+    sortables.forEach((sortable) => sortable.destroy());
+    sortables = [];
+    if (!Sortable) return;
+
+    const options = {
+      group: 'tier',
+      animation: 120,
+      draggable: '.tier-item',
+      forceFallback: true,
+      fallbackTolerance: 4,
+      delay: 180,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 6,
+      scrollSensitivity: 70,
+      scrollSpeed: 14,
+      ghostClass: 'tier-item--ghost',
+      chosenClass: 'tier-item--chosen',
+      dragClass: 'tier-item--drag',
+      onEnd({ item, to, from }) {
+        lastDragAt = Date.now();
+        if (to === from && to.dataset.pool !== undefined) return;
+
+        const id = Number(item.dataset.item);
+        if (to.dataset.tier) {
+          const next = item.nextElementSibling?.dataset.item;
+          moveShow(board, id, to.dataset.tier, next ? Number(next) : null);
+        } else {
+          removeShow(board, id);
+        }
+        persist();
+        if (selectedId === id) selectedId = null;
+        renderPool();
+        select(selectedId);
+      },
+    };
+
+    boardEl.querySelectorAll('[data-tier]').forEach((row) => sortables.push(new Sortable(row, options)));
+    sortables.push(new Sortable(poolEl, { ...options, sort: false }));
+  }
+
+  root.addEventListener('click', ({ target }) => {
+    if (Date.now() - lastDragAt < 250 || target.closest('#tier-dialog')) return;
+
+    const tierButton = target.closest('[data-place]');
+    if (tierButton) {
+      place(selectedId, tierButton.dataset.place);
+      return;
+    }
+
+    if (target.closest('[data-unplace]')) {
+      removeShow(board, selectedId);
+      persist();
+      selectedId = null;
+      renderBoard();
+      renderPool();
+      select(null);
+      return;
+    }
+
+    if (target.closest('[data-deselect]')) {
+      select(null);
+      return;
+    }
+
+    const item = target.closest('[data-item]');
     if (item) {
-      const id = Number(item.dataset.tile);
-      selectedId = selectedId === id ? null : id;
-      return draw();
+      const id = Number(item.dataset.item);
+      const row = item.closest('[data-tier]');
+      if (selectedId === id) select(null);
+      else if (selectedId && row) place(selectedId, row.dataset.tier, id);
+      else select(id);
+      return;
     }
-    const row = event.target.closest('[data-tier]');
-    if (row && selectedId) return place(selectedId, row.dataset.tier);
-    return undefined;
+
+    const emptyArea = target.closest('[data-tier]');
+    if (emptyArea && selectedId) place(selectedId, emptyArea.dataset.tier);
   });
 
-  root.addEventListener('keydown', (event) => {
-    if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('[data-tile]')) {
-      event.preventDefault();
-      event.target.click();
-    }
+  const filterForm = root.querySelector('#tier-filters');
+  bindFilters(filterForm, poolFilters, () => {
+    filters.language = poolFilters.language;
+    filters.mine = poolFilters.mine;
+    if (selectedId && !tierOfShow(board, selectedId)) selectedId = null;
+    renderPool();
+    select(selectedId);
   });
 
-  root.addEventListener('dragstart', (event) => {
-    const item = event.target.closest('[data-tile]');
-    if (item) event.dataTransfer.setData('text/plain', item.dataset.tile);
+  root.querySelector('#tier-query').addEventListener('input', ({ target }) => {
+    filters.query = target.value;
+    renderPool();
   });
-  root.addEventListener('dragover', (event) => {
-    if (event.target.closest('[data-tier]')) event.preventDefault();
+
+  root.querySelector('#tier-board-title').addEventListener('input', ({ target }) => {
+    board.title = target.value;
+    persist();
   });
-  root.addEventListener('drop', (event) => {
-    const row = event.target.closest('[data-tier]');
-    const id = Number(event.dataTransfer.getData('text/plain'));
-    if (!row || !id) return;
-    event.preventDefault();
-    const before = Number(event.target.closest('[data-tile]')?.dataset.tile);
-    place(id, row.dataset.tier, before && before !== id ? before : null);
+
+  root.querySelector('#tier-toggle-editor').addEventListener('click', ({ currentTarget }) => {
+    editor.hidden = !editor.hidden;
+    currentTarget.setAttribute('aria-expanded', String(!editor.hidden));
+    if (!editor.hidden) renderEditor();
+  });
+
+  root.querySelector('#tier-add-row').addEventListener('click', () => {
+    if (board.tiers.length >= MAX_TIERS) return;
+    board.tiers.push(createTier('Mới'));
+    persist();
+    renderAll();
   });
 
   root.querySelector('#tier-reset').addEventListener('click', () => {
-    board = { title: board.title };
+    if (!confirm('Xoá toàn bộ cách xếp của mùa này và trả mọi phim về kho?')) return;
+    const fresh = createBoard();
+    board.tiers = fresh.tiers;
+    board.title = '';
+    root.querySelector('#tier-board-title').value = '';
     selectedId = null;
-    saveBoard(seasonKey, board);
-    status.textContent = '';
-    result.hidden = true;
-    draw();
+    persist();
+    renderAll();
+    select(null);
   });
 
-  root.querySelector('#tier-make').addEventListener('click', async ({ currentTarget: button }) => {
-    const byId = new Map(shows().map((show) => [show.id, show]));
-    const tiers = TIERS.map((tier) => ({ ...tier, shows: tierShows(tier.key, byId) }));
-    if (!tiers.some((tier) => tier.shows.length)) {
-      status.textContent = 'Hãy xếp ít nhất một phim trước khi tạo ảnh.';
+  editor.addEventListener('input', ({ target }) => {
+    const tier = board.tiers.find(({ id }) => id === target.closest('[data-editor-tier]')?.dataset.editorTier);
+    if (!tier) return;
+    if (target.matches('[data-tier-label]')) tier.label = target.value;
+    else if (target.matches('[data-tier-color]')) tier.color = target.value;
+    else return;
+    persist();
+    renderBoard();
+    renderPicker();
+  });
+
+  editor.addEventListener('click', ({ target }) => {
+    const button = target.closest('button');
+    const tierId = target.closest('[data-editor-tier]')?.dataset.editorTier;
+    if (!button || !tierId) return;
+
+    if (button.matches('[data-tier-up]')) shiftTier(board, tierId, -1);
+    else if (button.matches('[data-tier-down]')) shiftTier(board, tierId, 1);
+    else if (button.matches('[data-tier-remove]')) {
+      const tier = board.tiers.find(({ id }) => id === tierId);
+      if (tier.items.length && !confirm(`Xoá hàng "${tier.label}"? Các phim trong hàng sẽ trở về kho.`)) return;
+      removeTier(board, tierId);
+    } else return;
+
+    persist();
+    renderAll();
+  });
+
+  const dialog = createShareDialog(root, {
+    getExport: (withTitles) => exportData(board, showsById, season, withTitles),
+    getLink: () => shareUrl(season, board),
+    fileName: `a4vf-tier-list-${season.key}.png`,
+    withTitles: () => filters.withTitles,
+    onWithTitles: (value) => { filters.withTitles = value; },
+  });
+
+  root.querySelector('#tier-open-share').addEventListener('click', () => {
+    if (!hasPlacedShows(board)) {
+      notify(html`Hãy xếp ít nhất một phim trước khi xuất ảnh.`);
       return;
     }
-    button.disabled = true;
-    status.textContent = 'Đang tạo ảnh…';
-    try {
-      const { renderTierImage } = await import('../ui/tier-image.js');
-      const blob = await renderTierImage({ title: titleInput.value.trim() || `Tier list ${seasonName()}`, tiers });
-      const url = URL.createObjectURL(blob);
-      const fileName = `tier-list-${seasonKey}.png`;
-      const file = new File([blob], fileName, { type: 'image/png' });
-      const share = root.querySelector('#tier-share');
-      const download = root.querySelector('#tier-download');
-      root.querySelector('#tier-image').src = url;
-      download.href = url;
-      download.download = fileName;
-      share.hidden = !navigator.canShare?.({ files: [file] });
-      share.onclick = () => navigator.share({ files: [file], title: titleInput.value }).catch(() => {});
-      result.hidden = false;
-      status.textContent = '';
-      result.scrollIntoView({ block: 'nearest' });
-    } catch (error) {
-      console.error(error);
-      status.textContent = 'Không tạo được ảnh, hãy thử lại.';
-    } finally {
-      button.disabled = false;
-    }
+    dialog.open();
   });
 
-  openSeason(seasonKey);
-  return null;
+  renderAll();
+
+  loadSortable().then((library) => {
+    // Người xem có thể đã rời trang trong lúc tải thư viện.
+    if (!library || !boardEl.isConnected) return;
+    Sortable = library;
+    bindSortables();
+  });
+
+  return { refresh: renderPool };
 }
