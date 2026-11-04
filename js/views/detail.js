@@ -66,6 +66,25 @@ function relatedShows(show, season, shows) {
     </section>`;
 }
 
+/** Các phần khác của cùng một bộ, gồm movie, OVA và ngoại truyện. */
+function seriesSection(show) {
+  if (show.series.length < 2) return '';
+  return html`
+    <section class="series-list" aria-labelledby="series-title">
+      <h2 id="series-title">Các phần khác</h2>
+      <ul class="list-unstyled">
+        ${show.series.map((item) => html`
+          <li>
+            <a class="series-item" href="${showPath(item.id, item.title)}" ${item.id === show.id ? html`aria-current="page"` : ''}>
+              ${poster(item, 'poster--fill')}
+              <span class="series-item__title">${item.title}</span>
+              <span class="series-item__meta">${item.format} · ${item.year}</span>
+            </a>
+          </li>`)}
+      </ul>
+    </section>`;
+}
+
 function actions(show) {
   return html`
     <div class="detail-actions">
@@ -344,6 +363,7 @@ export function mountDetail(root, { catalog, showId, backPath }) {
         ${show.unavailable
           ? html`<p class="detail-notice">${icon('info')}Hiện chưa có nơi xem bản quyền tại Việt Nam.</p>`
           : watchSection(show, platform, airing, { groups, group, selected })}
+        ${seriesSection(show)}
         ${trailerSection(show)}
         ${overview(show, season)}
         ${season ? relatedShows(show, season, catalog.shows) : ''}
