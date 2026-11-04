@@ -19,7 +19,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 const PORT = Number(process.env.BUILD_PORT) || 8199;
 const ORIGIN = `http://localhost:${PORT}`;
-const STATIC_FILES = ["robots.txt", "favicon.ico", "og-image.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "manifest.webmanifest", "anh.php"];
+const STATIC_FILES = ["robots.txt", "favicon.ico", "og-image.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png", "manifest.webmanifest", "poster.php"];
 /** Số mùa gần nhất tính cả mùa hiện tại giữ trong data.js. Phim cũ hơn vào kho tra cứu. */
 const RECENT_SEASONS = 4;
 const now = Date.now();
