@@ -7,6 +7,7 @@ import { notFoundPage } from '../components/not-found.js';
 import {
   createVideoFrame, dailymotionEmbedUrl, youtubeEmbedUrl, youtubeThumbnail, youtubeVideoId,
 } from '../components/video.js';
+import { addLatestEpisodes } from '../domain/latest-episodes.js';
 import { airingOf, englishName, episodeNumber, languageKind } from '../domain/shows.js';
 import { showFacts } from '../domain/seo.js';
 import { html, mount } from '../lib/html.js';
@@ -375,6 +376,12 @@ export function mountDetail(root, { catalog, showId, backPath }) {
         ${overview(show, season)}
         ${season ? relatedShows(show, season, catalog.shows) : ''}
       </article>`);
+
+    // Tập vừa chiếu chưa có link: thử tìm trong playlist, không làm gián đoạn video đang phát.
+    addLatestEpisodes(platform, airing).then((added) => {
+      const samePage = root.querySelector('.detail') && currentPlatform() === platform;
+      if (added && samePage && !root.querySelector('.video-frame iframe')) render();
+    });
 
     // Tới giờ chiếu thì vẽ lại trang, trừ khi người xem đang phát video.
     startCountdown(root.querySelector('#countdown'), platform, airing, () => {
