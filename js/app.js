@@ -31,7 +31,7 @@ const outlet = document.querySelector('#main');
 const state = {
   home: { language: 'vi', free: false, mine: false },
   list: { language: 'all', free: false, mine: false, sort: 'views', seasonKey: '', query: '' },
-  search: { query: '', genre: '', platform: '', free: false, limit: 24 },
+  search: { query: '', genre: '', platform: '', free: false, language: 'vi', limit: 24 },
   tier: { language: null, mine: false, query: '', withTitles: true },
 };
 

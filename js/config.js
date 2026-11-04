@@ -79,6 +79,7 @@ export const STATUS = {
 export const LANGUAGES = [
   { value: 'all', label: 'Tất cả', icon: 'video_library' },
   { value: 'vi', label: 'Vietsub', icon: 'closed_caption' },
+  { value: 'dub', label: 'Lồng tiếng', icon: 'record_voice_over' },
 ];
 
 export const SORTS = [
