@@ -77,7 +77,7 @@ function matchesSearch(item, { query, genre, platform, free }) {
 
 export function searchShows(shows, filters, now) {
   const list = shows.filter((show) => !show.nsfw && matchesSearch(show, filters));
-  return sortShows(list, 'name', now);
+  return sortShows(list, 'views', now);
 }
 
 /** Lọc chỉ mục phim cũ theo cùng điều kiện với searchShows. */
