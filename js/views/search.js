@@ -8,6 +8,8 @@ import { PLATFORM_PAGES } from '../config.js';
 import { allGenres, searchArchive, searchShows } from '../domain/shows.js';
 import { html, mount } from '../lib/html.js';
 
+const PAGE_SIZE = 24;
+
 const selectFilter = (name, label, allLabel, options, selected) => html`
   <div class="search-filter">
     <label class="form-label" for="search-${name}">${label}</label>
@@ -39,12 +41,16 @@ export function mountSearch(root, { catalog, state }) {
       <p class="filter-bar__count" id="result-count" role="status" aria-atomic="true"></p>
     </form>
     <h2 class="visually-hidden">Kết quả</h2>
-    <ul class="${SHOW_GRID_CLASS}" id="search-results"></ul>`);
+    <ul class="${SHOW_GRID_CLASS}" id="search-results"></ul>
+    <div class="search-more">
+      <button class="btn btn-outline-primary" type="button" id="search-more" hidden></button>
+    </div>`);
 
   const form = root.querySelector('#search-form');
   const results = root.querySelector('#search-results');
   const count = root.querySelector('#result-count');
   const clear = root.querySelector('#search-clear');
+  const more = root.querySelector('#search-more');
   let archive = [];
 
   function refresh() {
@@ -52,9 +58,13 @@ export function mountSearch(root, { catalog, state }) {
     clear.hidden = !(filters.genre || filters.platform || filters.free);
     const shows = searchShows(catalog.shows, filters, now);
     const older = searchArchive(archive, filters, new Set(catalog.shows.map((show) => show.id)));
-    count.textContent = `${shows.length + older.length} anime`;
-    mount(results, shows.length + older.length
-      ? html`${showGrid(shows, now)}${older.map(archiveCard)}`
+    const total = shows.length + older.length;
+    const visibleOlder = older.slice(0, Math.max(0, filters.limit - shows.length));
+    count.textContent = `${total} anime`;
+    more.hidden = total <= filters.limit;
+    more.textContent = `Xem thêm (còn ${total - filters.limit} phim)`;
+    mount(results, total
+      ? html`${showGrid(shows.slice(0, filters.limit), now)}${visibleOlder.map(archiveCard)}`
       : html`<li class="col-12">${emptyState('search_off', 'Không tìm thấy anime nào. Hãy thử tên khác.')}</li>`);
   }
 
@@ -64,11 +74,17 @@ export function mountSearch(root, { catalog, state }) {
     if (target.name === 'genre') filters.genre = target.value;
     if (target.name === 'platform') filters.platform = target.value;
     if (target.name === 'free') filters.free = target.checked;
+    filters.limit = PAGE_SIZE;
+    refresh();
+  });
+
+  more.addEventListener('click', () => {
+    filters.limit += PAGE_SIZE;
     refresh();
   });
 
   clear.addEventListener('click', () => {
-    Object.assign(filters, { genre: '', platform: '', free: false });
+    Object.assign(filters, { genre: '', platform: '', free: false, limit: PAGE_SIZE });
     form.elements.genre.value = '';
     form.elements.platform.value = '';
     form.elements.free.checked = false;
