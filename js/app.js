@@ -29,7 +29,7 @@ const outlet = document.querySelector('#main');
 const state = {
   home: { language: 'vi', free: false, mine: false },
   list: { language: 'all', free: false, mine: false, sort: 'views', seasonKey: '', query: '' },
-  search: { query: '', genre: '' },
+  search: { query: '', genre: '', platform: '', free: false },
 };
 
 let catalog;
