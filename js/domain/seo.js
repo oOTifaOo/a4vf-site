@@ -36,6 +36,12 @@ export const notFoundSeo = (path) => ({
   noindex: true,
 });
 
+export const tierListSeo = () => ({
+  title: withBrand('Tạo tier list anime theo mùa'),
+  description: 'Tự xếp hạng anime trong mùa theo các hạng S, A, B, C, D rồi tải ảnh tier list về hoặc chia sẻ với bạn bè.',
+  path: PATHS.tierList,
+});
+
 export const aboutSeo = () => ({
   title: withBrand('Giới thiệu nhóm dịch anime 20 năm kinh nghiệm'),
   description: 'A4VFamily là nhóm dịch anime Nhật - Việt với 20 năm kinh nghiệm và gần 1000 dự án, cung cấp dịch thuật, lồng tiếng và marketing cho anime bản quyền.',
