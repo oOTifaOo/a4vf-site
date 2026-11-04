@@ -19,6 +19,8 @@ const toItem = (raw) => ({
   poster: raw.img ?? '',
   genres: raw.g ?? [],
   platforms: (raw.p ?? []).map((name) => ({ name })),
+  platformNames: raw.p ?? [],
+  freePlatformNames: raw.f ?? [],
 });
 
 let index;

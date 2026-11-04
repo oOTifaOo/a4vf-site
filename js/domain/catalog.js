@@ -62,6 +62,8 @@ export function normalizeShow(raw, index) {
     trailer: raw.tr ?? null,
     nsfw: Boolean(raw.nsfw),
     unavailable: Boolean(raw.gone),
+    platformNames: allPlatforms.map((platform) => platform.name),
+    freePlatformNames: raw.gone ? [] : allPlatforms.filter((platform) => platform.isFree).map((platform) => platform.name),
     isFree: !raw.gone && allPlatforms.some((platform) => platform.isFree),
     platforms,
     otherPlatforms,

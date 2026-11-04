@@ -1,6 +1,6 @@
 /* Quy tắc nghiệp vụ, không đụng tới DOM nên dễ kiểm thử và dùng lại. */
 
-import { UPCOMING_WINDOW_DAYS } from '../config.js';
+import { PLATFORM_PAGES, UPCOMING_WINDOW_DAYS } from '../config.js';
 import { normalizeText } from '../lib/text.js';
 import { DAY_MS, todayStart, WEEK_MS, weekdayOf } from '../lib/time.js';
 import { isFollowing } from './follow.js';
@@ -64,17 +64,26 @@ export function selectSeasonShows(shows, { seasonKey, sort, language, free, mine
   return sortShows(list, mine ? 'air' : sort, now);
 }
 
-export function searchShows(shows, { query, genre }, now) {
-  const list = shows.filter(
-    (show) => !show.nsfw && (!genre || show.genres.includes(genre)) && matchesQuery(show, query),
-  );
+/** Bộ lọc của trang Tìm Anime: thể loại, nền tảng, Free và tên. Dùng chung cho phim mới và phim cũ. */
+function matchesSearch(item, { query, genre, platform, free }) {
+  const names = PLATFORM_PAGES.find(({ slug }) => slug === platform)?.names;
+  // Chọn cả nền tảng và Free: phim phải miễn phí đúng trên nền tảng đó.
+  const available = free ? item.freePlatformNames : item.platformNames;
+  return (!genre || item.genres.includes(genre))
+    && (!free || available.length > 0)
+    && (!names || available.some((name) => names.includes(name)))
+    && matchesQuery(item, query);
+}
+
+export function searchShows(shows, filters, now) {
+  const list = shows.filter((show) => !show.nsfw && matchesSearch(show, filters));
   return sortShows(list, 'name', now);
 }
 
 /** Lọc chỉ mục phim cũ theo cùng điều kiện với searchShows. */
-export function searchArchive(items, { query, genre }, knownIds) {
+export function searchArchive(items, filters, knownIds) {
   return items
-    .filter((item) => !knownIds.has(item.id) && (!genre || item.genres.includes(genre)) && matchesQuery(item, query))
+    .filter((item) => !knownIds.has(item.id) && matchesSearch(item, filters))
     .sort((a, b) => a.title.localeCompare(b.title, 'vi'));
 }
 
