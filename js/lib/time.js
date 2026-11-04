@@ -51,6 +51,11 @@ export function todayStart(time) {
   return time - ((time + VN_OFFSET_MS - END_MS) % DAY_MS);
 }
 
+/** Lúc bắt đầu tuần phát sóng: thứ Hai, TODAY_END_HOUR giờ sáng. */
+export function weekStart(time) {
+  return todayStart(time) - ((weekdayOf(time) + 6) % 7) * DAY_MS;
+}
+
 /** "2 ngày 3 giờ", "5 giờ 10 phút", "8 phút" */
 export function formatEta(ms) {
   const minutes = Math.max(0, Math.round(ms / 6e4));
