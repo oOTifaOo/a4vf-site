@@ -326,6 +326,12 @@ time,
   color: var(--accent-text);
 }
 
+.search-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
 .search-filters__clear[hidden] {
   display: none;
 }
