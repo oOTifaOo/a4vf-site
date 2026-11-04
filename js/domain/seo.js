@@ -101,7 +101,8 @@ export function seasonSeo(season, count, shows = []) {
 }
 
 const vietnameseLabel = (show) =>
-  (show.platforms.some((platform) => languageKind(platform.language) === 'vi') ? 'Vietsub' : 'Engsub');
+  (show.platforms.some((platform) => languageKind(platform.language) === 'vi') ? 'Vietsub'
+    : show.platforms.some(({ language }) => /lồng tiếng/i.test(language)) ? 'Lồng tiếng' : 'Engsub');
 
 /**
  * Câu mô tả dựng từ dữ liệu của chính site: bản Việt của từng phim, nền tảng và giờ chiếu.
