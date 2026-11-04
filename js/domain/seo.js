@@ -1,7 +1,7 @@
 /* Tiêu đề, mô tả và dữ liệu có cấu trúc của từng trang. Không đụng tới DOM. */
 
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, WEEKDAYS } from '../config.js';
-import { hasVietnameseRelease, PATHS, platformPath, seasonPath, showPath } from '../lib/paths.js';
+import { hasVietnameseRelease, PATHS, platformHeading, platformPath, platformReleaseText, seasonPath, showPath } from '../lib/paths.js';
 import { truncateWords } from '../lib/text.js';
 import { formatTime, weekdayOf } from '../lib/time.js';
 import { airingOf, englishName, languageKind } from './shows.js';
@@ -76,11 +76,11 @@ const itemListJsonLd = (name, shows) => [{
 }];
 
 export function platformSeo(platform, shows) {
-  const name = `Anime Vietsub trên ${platform.label}`;
+  const name = platformHeading(platform);
   return {
     title: withBrand(`${name}: danh sách và lịch chiếu`),
     description: truncateWords(
-      `${shows.length} anime có phụ đề tiếng Việt trên ${platform.label} (${platform.note}), kèm giờ chiếu và link xem từng phim.`,
+      `${shows.length} anime ${platformReleaseText(platform)} trên ${platform.label} (${platform.note}), kèm giờ chiếu và link xem từng phim.`,
       MAX_DESCRIPTION,
     ),
     path: platformPath(platform.slug),
