@@ -50,8 +50,8 @@ jobs:
           FTP_PASS: ${{ secrets.FTP_PASS }}
         run: |
           sudo apt-get install -y -qq lftp
-          OLD_MANIFEST=old-manifest.json node scripts/upload-list.mjs > upload.lftp
-          lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST" -e "set cmd:fail-exit true; set ssl:verify-certificate no; source upload.lftp; quit"
+          OLD_MANIFEST=old-manifest.json node scripts/upload-list.mjs
+          bash scripts/upload-ftp.sh
       - if: vars.DEPLOY_TARGET == 'ftp'
         run: OLD_SITEMAP=old-sitemap.xml node scripts/indexnow.mjs || true
   deploy-pages:
