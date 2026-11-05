@@ -69,6 +69,7 @@ export const UPCOMING_WINDOW_DAYS = 14;
 export const TODAY_END_HOUR = 2;
 
 export const FOLLOW_STORAGE_KEY = 'a4vf_follow';
+export const PROGRESS_STORAGE_KEY = 'a4vf_progress';
 
 export const STATUS = {
   air: { label: 'Đang chiếu', icon: 'play_circle' },
