@@ -4,11 +4,16 @@ import { emptyState, followButton, icon, poster } from '../components/common.js'
 import { bindFilters, freeToggle, languageFilter, mineToggle } from '../components/filters.js';
 import { platformMarks } from '../components/platform-logo.js';
 import { WEEK_ORDER, WEEKDAYS, WEEKDAYS_SHORT } from '../config.js';
+import { loadArchivedShow } from '../domain/archive.js';
 import { isFollowing } from '../domain/follow.js';
+import { clearProgress, recentProgressIds, selectContinueWatching } from '../domain/progress.js';
 import { airWeekday, episodeNumber, selectTodayEpisodes, selectWeekShows } from '../domain/shows.js';
 import { html, mount } from '../lib/html.js';
 import { showPath } from '../lib/paths.js';
-import { formatCountdown, formatDayLabel, formatTime, todayStart, toIso, weekdayOf } from '../lib/time.js';
+import { formatCountdown, formatDayLabel, formatShortDateTime, formatTime, todayStart, toIso, weekdayOf } from '../lib/time.js';
+import { clearTooltips } from '../ui/tooltips.js';
+
+const CONTINUE_LIMIT = 12;
 
 const followMark = (show) => (isFollowing(show.id) ? icon('star', 'follow-mark') : '');
 
@@ -29,6 +34,22 @@ function todayCard({ show, time, episode }, now) {
       </span>
       <a class="poster-card__title stretched-link" href="${showPath(show.id, show.title)}" title="${show.title}">${show.title}</a>
       <span class="poster-card__meta">${formatTime(time)} · Tập ${episodeNumber(platform, episode)}/${episodeNumber(platform, show.episodes)}</span>
+    </li>`;
+}
+
+function continueCard({ show, platform, next, nextTime, available, isNew }) {
+  const number = episodeNumber(platform, next);
+  const label = `Bỏ ${show.title} khỏi Tiếp tục xem`;
+  return html`
+    <li class="poster-card">
+      <button class="follow-btn" type="button" data-clear-progress="${show.id}" aria-label="${label}"
+        data-bs-title="Bỏ khỏi danh sách">${icon('close')}</button>
+      <span class="poster-card__cover">
+        ${poster(show, 'poster--fill')}
+        ${isNew ? html`<span class="poster-card__badge poster-card__badge--new">Có tập mới</span>` : ''}
+      </span>
+      <a class="poster-card__title stretched-link" href="${showPath(show.id, show.title)}" title="${show.title}">${show.title}</a>
+      <span class="poster-card__meta">${available ? `Xem tiếp tập ${number}` : `Tập ${number}: ${formatShortDateTime(nextTime)}`}</span>
     </li>`;
 }
 
@@ -76,6 +97,10 @@ export function mountHome(root, { catalog, state }) {
 
   mount(root, html`
     <h1 class="page-title" tabindex="-1">Lịch chiếu Anime bản quyền</h1>
+    <section aria-labelledby="continue-title" id="continue-section" hidden>
+      <header class="section-header"><h2 id="continue-title">Tiếp tục xem</h2></header>
+      <div id="continue-list"></div>
+    </section>
     <form class="filter-bar" id="home-filters">
       ${languageFilter(filters.language)}
       ${freeToggle(filters.free)}
@@ -101,14 +126,23 @@ export function mountHome(root, { catalog, state }) {
   const todayList = root.querySelector('#today-list');
   const weekTabs = root.querySelector('#week-tabs');
   const weekList = root.querySelector('#week-list');
+  const continueSection = root.querySelector('#continue-section');
+  const continueList = root.querySelector('#continue-list');
 
   let shownDay = 0;
+
+  function refreshContinue(time) {
+    const items = selectContinueWatching(catalog.shows, time, CONTINUE_LIMIT);
+    continueSection.hidden = !items.length;
+    mount(continueList, html`<ul class="episode-strip list-unstyled">${items.map(continueCard)}</ul>`);
+  }
 
   function refresh() {
     const time = Date.now();
     const entries = selectWeekShows(catalog.shows, filters, time);
     const episodes = selectTodayEpisodes(catalog.shows, filters, time);
 
+    refreshContinue(time);
     shownDay = todayStart(time);
     // Sang ngày mới khi trang đang mở: chuyển theo nếu người xem đang ở tab hôm nay.
     if (weekdayOf(time) !== today) {
@@ -132,7 +166,21 @@ export function mountHome(root, { catalog, state }) {
     weekTabs.querySelector(`[data-day="${selectedDay}"]`).focus();
   });
 
+  continueList.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-clear-progress]');
+    if (!button) return;
+    clearTooltips();
+    clearProgress(Number(button.dataset.clearProgress));
+    refreshContinue(Date.now());
+  });
+
   refresh();
+
+  // Phim mùa cũ không có sẵn trong data.js: tải riêng rồi vẽ lại mục Tiếp tục xem.
+  const missing = recentProgressIds(CONTINUE_LIMIT).filter((id) => !catalog.shows.some((show) => show.id === id));
+  Promise.all(missing.map((id) => loadArchivedShow(catalog, id))).then((added) => {
+    if (added.some(Boolean) && continueList.isConnected) refreshContinue(Date.now());
+  });
 
   // Một đồng hồ chung, tự dừng khi rời trang. Tới giờ chiếu hoặc sang ngày mới thì vẽ lại.
   const timer = setInterval(() => {
