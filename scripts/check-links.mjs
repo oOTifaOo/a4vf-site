@@ -30,21 +30,21 @@ const DEAD_LINKS = {
   "FPT Play": "https://fptplay.vn/xem-video/a4vf-kiem-tra-khong-ton-tai-000000000000000000000000",
   "Bilibili TV": "https://www.bilibili.tv/vi/play/9999999999",
 };
+const DEAD_PLAYLIST = "PLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const YOUTUBE_API = "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false";
+const YOUTUBE_CLIENT = { clientName: "WEB", clientVersion: "2.20261030.02.00", hl: "vi", gl: "VN" };
+const BILIBILI_API = "https://api.bilibili.tv/intl/gateway/web/v2/ogv/play/season_info?platform=web&s_locale=vi_VN&season_id=";
+const BILIBILI_MISSING = 10015404;
+/** Link chết trên FPT Play vẫn trả 200 nhưng chỉ có tiêu đề chung của trang. */
+const FPT_EMPTY_PAGE = /<title[^>]*>\s*FPT Play\s*[-:]/i;
+/** Quá nhiều link cùng hỏng thì nhiều khả năng máy kiểm tra bị chặn, không phải phim bị gỡ. */
+const MAX_BROKEN_SHARE = 0.2;
 const COMMON_WORDS = new Set(["anime", "season", "part", "the", "and", "vietsub", "long", "tieng", "tap", "mua", "phan",
   "cua", "cho", "mot", "nhung", "muse", "viet", "nam", "ani", "one", "pops", "kids", "movie", "full", "ban", "episode"]);
 const NOT_AN_EPISODE = /trailer|teaser|preview|\bpv\b|tổng hợp|siêu clip|superclip/i;
-const PLAYLIST_ERROR = /(?:playlist does not exist|playlist is private|playlist type is unviewable|danh sách phát (?:này )?không tồn tại|danh sách phát (?:này )?ở chế độ riêng tư)/i;
+const PLAYLIST_ERROR = /playlist does not exist|playlist is private|playlist type is unviewable|danh sách phát[^"]{0,30}(?:không tồn tại|riêng tư)/i;
 
 export const playlistId = (url) => /[?&]list=([\w-]+)/.exec(url)?.[1] ?? /\/show\/VL([\w-]+)/.exec(url)?.[1] ?? null;
-
-const decodeXml = (text) => text
-  .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
-  .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code))).replace(/&amp;/g, "&");
-
-function videosFromFeed(xml) {
-  return [...xml.matchAll(/<entry>[\s\S]*?<yt:videoId>([\w-]{11})<\/yt:videoId>[\s\S]*?<title>([\s\S]*?)<\/title>/g)]
-    .map(([, id, title]) => ({ id, title: decodeXml(title) }));
-}
 
 function videosFromPage(page) {
   const patterns = [
@@ -60,10 +60,10 @@ function videosFromPage(page) {
   return [];
 }
 
-async function download(url, fetcher, redirect = "follow") {
+async function download(url, fetcher, options = {}) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetcher(url, { headers: HEADERS, redirect, signal: AbortSignal.timeout(TIMEOUT_MS) });
+      const response = await fetcher(url, { ...options, headers: { ...HEADERS, ...options.headers }, signal: AbortSignal.timeout(TIMEOUT_MS) });
       if (response.status === 429 || response.status >= 500) throw new Error(`HTTP ${response.status}`);
       return { status: response.status, body: await response.text() };
     } catch (error) {
@@ -75,23 +75,41 @@ async function download(url, fetcher, redirect = "follow") {
 
 /** ok: đọc được video. broken: YouTube nói rõ playlist không còn. unknown: chưa kết luận được. */
 export async function checkPlaylist(id, fetcher = fetch) {
-  const feed = await download(`https://www.youtube.com/feeds/videos.xml?playlist_id=${id}`, fetcher);
-  const fromFeed = feed.status === 200 ? videosFromFeed(feed.body) : [];
-  if (fromFeed.length) return { state: "ok", videos: fromFeed };
+  const api = await download(YOUTUBE_API, fetcher, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ context: { client: YOUTUBE_CLIENT }, browseId: `VL${id}` }),
+  });
+  const fromApi = api.status === 200 ? videosFromPage(api.body) : [];
+  if (fromApi.length) return { state: "ok", videos: fromApi };
+  if (api.status === 200 && PLAYLIST_ERROR.test(api.body)) return { state: "broken", videos: [] };
 
   const page = await download(`https://www.youtube.com/playlist?hl=vi&list=${id}`, fetcher);
   const fromPage = page.status === 200 ? videosFromPage(page.body) : [];
   if (fromPage.length) return { state: "ok", videos: fromPage };
   if (page.status === 404 || (page.status === 200 && PLAYLIST_ERROR.test(page.body))) return { state: "broken", videos: [] };
-  return { state: "unknown", videos: [], reason: page.error ?? `feed ${feed.status}, trang ${page.status}` };
+  return { state: "unknown", videos: [], reason: page.error ?? `API ${api.status} (${api.body.length} ký tự), trang ${page.status}` };
 }
 
-export async function checkPage(url, fetcher = fetch) {
-  const { status, error } = await download(url, fetcher);
-  if (status === 404 || status === 410) return { state: "broken", reason: `HTTP ${status}` };
-  if (status >= 200 && status < 400) return { state: "ok" };
-  return { state: "unknown", reason: error ?? `HTTP ${status}` };
+async function checkBilibili(url, fetcher) {
+  const id = /\/(?:play|media)\/(\d+)/.exec(url)?.[1];
+  if (!id) return { state: "unknown", reason: "không đọc được mã phim trong link" };
+  const { status, body, error } = await download(`${BILIBILI_API}${id}`, fetcher);
+  let code = null;
+  try { code = JSON.parse(body).code; } catch { /* Không phải JSON: để kết luận chưa kiểm tra được. */ }
+  if (code === 0) return { state: "ok" };
+  if (code === BILIBILI_MISSING) return { state: "broken", reason: "Bilibili báo không tìm thấy phim" };
+  return { state: "unknown", reason: error ?? `HTTP ${status}, mã ${code}` };
 }
+
+async function checkFpt(url, fetcher) {
+  const { status, body, error } = await download(url, fetcher);
+  if (status === 404 || status === 410) return { state: "broken", reason: `HTTP ${status}` };
+  if (status !== 200) return { state: "unknown", reason: error ?? `HTTP ${status}` };
+  return FPT_EMPTY_PAGE.test(body) ? { state: "broken", reason: "FPT Play không còn trang phim này" } : { state: "ok" };
+}
+
+export const checkPage = (url, name, fetcher = fetch) => (name === "Bilibili TV" ? checkBilibili : checkFpt)(url, fetcher);
 
 const wordsOf = (text) => normalizeText(text ?? "").split(/[^a-z0-9]+/)
   .filter((word) => word.length >= 3 && !COMMON_WORDS.has(word) && !/^\d+$/.test(word));
@@ -178,11 +196,19 @@ export async function runChecks(shows, now = Date.now(), fetcher = fetch) {
     }
   });
 
+  const pageTally = {};
   await eachLimited([...pages], async ([url, uses]) => {
-    const result = await checkPage(url, fetcher);
-    if (result.state === "broken") found.broken.push({ uses, url, reason: result.reason });
+    const tally = (pageTally[uses[0].platform.name] ??= { checked: 0, broken: [] });
+    const result = await checkPage(url, uses[0].platform.name, fetcher);
+    tally.checked += 1;
+    if (result.state === "broken") tally.broken.push({ uses, url, reason: result.reason });
     if (result.state === "unknown") found.unknown.push({ uses, url, reason: result.reason });
   });
+  for (const { checked, broken } of Object.values(pageTally)) {
+    const suspicious = broken.length > Math.max(3, checked * MAX_BROKEN_SHARE);
+    if (suspicious) found.unknown.push(...broken.map((item) => ({ ...item, reason: `${item.reason}, nhưng quá nhiều link cùng lỗi nên chưa tin` })));
+    else found.broken.push(...broken);
+  }
 
   for (const [id, uses] of playlists) {
     const titles = [...new Set(uses.map(({ show }) => show.title))];
@@ -190,8 +216,8 @@ export async function runChecks(shows, now = Date.now(), fetcher = fetch) {
   }
 
   // Thử một link giả để biết nền tảng có trả lỗi khi link chết không.
-  const detection = {};
-  for (const [name, url] of Object.entries(DEAD_LINKS)) detection[name] = (await checkPage(url, fetcher)).state;
+  const detection = { YouTube: (await checkPlaylist(DEAD_PLAYLIST, fetcher)).state };
+  for (const [name, url] of Object.entries(DEAD_LINKS)) detection[name] = (await checkPage(url, name, fetcher)).state;
 
   return { ...found, empty, detection, counts: { playlists: playlists.size, pages: pages.size } };
 }
@@ -200,8 +226,8 @@ const useLine = ({ show, platform }) => `${show.title} (${platform.name}, id ${s
 const uniqueTitles = (uses) => [...new Set(uses.map(useLine))].join("; ");
 
 const DETECTION_TEXT = {
-  broken: "có báo lỗi 404 khi link chết, nên kết quả tin được",
-  ok: "vẫn trả trang bình thường cho link không tồn tại, nên chưa phát hiện được link chết của nền tảng này",
+  broken: "nhận ra được link giả, nên kết quả tin được",
+  ok: "không nhận ra link giả, nên chưa phát hiện được link chết của nền tảng này",
   unknown: "không trả lời máy kiểm tra, nên chưa kết luận được",
 };
 
@@ -230,7 +256,7 @@ export function buildReport(result, now = Date.now()) {
       return `${useLine(use)}: tập ${episodes.join(", ")}, ${state}. ${url}`;
     }));
   section("Có thể gắn nhầm phim", "Không video nào trong playlist có chung từ với tên phim. Chỉ là nghi ngờ, cần mở ra xem.",
-    mismatch.map(({ url, sample, ...use }) => `${useLine(use)}: video mới nhất là "${sample}". ${url}`));
+    mismatch.map(({ url, sample, ...use }) => `${useLine(use)}: playlist có video "${sample}". ${url}`));
   section("Một playlist gắn nhiều phim", "Có thể đúng nếu kênh gộp nhiều mùa, nhưng nên xem lại.",
     shared.map(({ url, titles }) => `${titles.join("; ")}. ${url}`));
   section("Chưa có link", "", empty.map(useLine));
