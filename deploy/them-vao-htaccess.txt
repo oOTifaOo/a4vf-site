@@ -1,3 +1,15 @@
+# BEGIN A4VF Cache
+# Dữ liệu phim: trình duyệt hỏi lại server mỗi lần mở trang, file không đổi thì chỉ nhận 304.
+<FilesMatch "^(data\.js|kho\.json|mo-ta-.*\.json|mua-.*\.json)$">
+<IfModule mod_expires.c>
+ExpiresActive Off
+</IfModule>
+<IfModule mod_headers.c>
+Header unset Expires
+Header set Cache-Control "no-cache"
+</IfModule>
+</FilesMatch>
+# END A4VF Cache
 # BEGIN A4VFamily
 # Dùng khi website nằm trên host (LiteSpeed/Apache). Dán vào đầu file .htaccess trong public_html.
 ErrorDocument 404 /404.html
