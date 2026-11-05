@@ -8,11 +8,13 @@ import {
   createVideoFrame, dailymotionEmbedUrl, youtubeEmbedUrl, youtubeThumbnail, youtubeVideoId,
 } from '../components/video.js';
 import { addLatestEpisodes } from '../domain/latest-episodes.js';
+import { clearProgress, progressOf, recordEpisode, setProgress } from '../domain/progress.js';
 import { airingOf, englishName, episodeNumber, languageKind } from '../domain/shows.js';
 import { showFacts } from '../domain/seo.js';
 import { html, mount } from '../lib/html.js';
 import { hasVietnameseRelease, PATHS, seasonPath, showPath } from '../lib/paths.js';
 import { formatDateTime, padNumber, toIso } from '../lib/time.js';
+import { notify } from '../ui/feedback.js';
 import { reportButton } from '../ui/report.js';
 
 const YOUTUBE_URL = /youtube\.com|youtu\.be/i;
@@ -109,7 +111,7 @@ function subtitleGroups(show) {
     const kind = languageKind(platform.language);
     byKind.set(kind, [...(byKind.get(kind) ?? []), platform]);
   }
-  return [...byKind].map(([kind, platforms]) => ({ platforms, ...SUBTITLE_GROUPS[kind] }));
+  return [...byKind].map(([kind, platforms]) => ({ kind, platforms, ...SUBTITLE_GROUPS[kind] }));
 }
 
 function subtitleTabs(groups, active) {
@@ -146,11 +148,20 @@ function latestPlayableEpisode(platform, airing) {
   return null;
 }
 
+/** Tập mở sẵn: tập kế tiếp của người đang xem dở, không thì tập mới nhất. */
+function startingEpisode(platform, airing, watched) {
+  for (let episode = watched + 1; watched && episode <= airing.aired; episode += 1) {
+    if (episodeVideo(platform, episode)) return episode;
+  }
+  return latestPlayableEpisode(platform, airing);
+}
+
 const episodeLabel = (platform, episode) => padNumber(episodeNumber(platform, episode));
 
-function episodeButton(platform, airing, episode, selectedEpisode) {
+function episodeButton(platform, airing, episode, selectedEpisode, watched) {
   const number = episodeLabel(platform, episode);
   const when = formatDateTime(airing.timeOf(episode));
+  const watchedClass = episode <= watched ? 'episode--watched' : '';
 
   if (episode > airing.aired) {
     return html`<li><button class="btn episode episode--upcoming" type="button" aria-disabled="true"
@@ -158,7 +169,7 @@ function episodeButton(platform, airing, episode, selectedEpisode) {
   }
 
   if (episodeVideo(platform, episode)) {
-    return html`<li><button class="btn episode" type="button" data-play-episode="${episode}"
+    return html`<li><button class="btn episode ${watchedClass}" type="button" data-play-episode="${episode}" data-episode="${episode}"
       aria-pressed="${episode === selectedEpisode}" aria-label="Phát tập ${number}, đã chiếu ${when}"
       data-bs-title="${when}">${number}</button></li>`;
   }
@@ -174,8 +185,8 @@ function episodeButton(platform, airing, episode, selectedEpisode) {
   // Chỉ làm nổi bật tập mới khi tập đó có link riêng.
   const latest = episode === airing.aired && !selectedEpisode && Boolean(platform.episodeLinks[episode]);
   const label = opensPlaylist ? `Xem tập ${number} trong playlist YouTube, đã chiếu ${when}` : `Xem tập ${number}, đã chiếu ${when}`;
-  return html`<li><a class="btn episode ${latest ? 'episode--latest' : ''}" ${externalLink(url)}
-    aria-label="${label}" data-bs-title="${opensPlaylist ? 'Mở playlist YouTube' : when}">${number}</a></li>`;
+  return html`<li><a class="btn episode ${latest ? 'episode--latest' : ''} ${watchedClass}" ${externalLink(url)}
+    data-episode="${episode}" data-watch-episode="${episode}" aria-label="${label}" data-bs-title="${opensPlaylist ? 'Mở playlist YouTube' : when}">${number}</a></li>`;
 }
 
 function playerFacade(platform, episode) {
@@ -191,7 +202,7 @@ function playerCaption(platform, airing, episode) {
   return html`
     <span>Tập ${episodeLabel(platform, episode)} · <time>${formatDateTime(airing.timeOf(episode))}</time></span>
     <a class="btn btn-icon" href="${platform.episodeLinks[episode]}" target="_blank" rel="noopener"
-      aria-label="Mở trên YouTube" data-bs-title="Mở trên YouTube">${icon('open_in_new')}</a>`;
+      data-watch-episode="${episode}" aria-label="Mở trên YouTube" data-bs-title="Mở trên YouTube">${icon('open_in_new')}</a>`;
 }
 
 function player(platform, airing, episode) {
@@ -203,9 +214,25 @@ function player(platform, airing, episode) {
     </div>`;
 }
 
-function watchSection(show, platform, airing, { groups, group, selected }) {
+/** Người xem tự chỉnh tiến độ. Chỉ có tập đã chiếu, cộng thêm tập đã lưu nếu lịch chiếu vừa đổi. */
+function progressPicker(platform, airing, watched) {
+  const last = Math.max(airing.aired, watched);
+  if (!last) return '';
+  const episodes = Array.from({ length: last }, (_, i) => i + 1);
+  return html`
+    <div class="watch-progress">
+      <label for="watch-progress">Đang xem đến tập</label>
+      <select class="form-select form-select-sm" id="watch-progress" data-watch-progress>
+        <option value="0" ${watched ? '' : 'selected'}>Chưa xem</option>
+        ${episodes.map((episode) => html`
+          <option value="${episode}" ${episode === watched ? 'selected' : ''}>${episodeLabel(platform, episode)}</option>`)}
+      </select>
+    </div>`;
+}
+
+function watchSection(show, platform, airing, { groups, group, selected, watched }) {
   const episodes = Array.from({ length: show.episodes }, (_, i) => i + 1);
-  const playable = latestPlayableEpisode(platform, airing);
+  const playable = startingEpisode(platform, airing, watched);
   return html`
     <section aria-labelledby="watch-title">
       ${subtitleTabs(groups, group)}
@@ -217,8 +244,9 @@ function watchSection(show, platform, airing, { groups, group, selected }) {
       </header>
       ${playable ? player(platform, airing, playable) : ''}
       <ol class="episode-grid list-unstyled">
-        ${episodes.map((episode) => episodeButton(platform, airing, episode, playable))}
+        ${episodes.map((episode) => episodeButton(platform, airing, episode, playable, watched))}
       </ol>
+      ${progressPicker(platform, airing, watched)}
       <div class="collapse" id="episode-schedule">
         <div class="table-responsive">
           <table class="table table-sm align-middle mb-0">
@@ -329,10 +357,29 @@ export function mountDetail(root, { catalog, showId, backPath }) {
 
   const season = catalog.seasons.find((item) => item.key === show.season);
   const groups = subtitleGroups(show);
-  let group = 0;
-  let selected = 0;
+  const saved = progressOf(show.id);
+  const savedGroup = groups.findIndex(({ kind }) => kind === saved?.group);
+  let group = Math.max(savedGroup, 0);
+  let selected = savedGroup < 0 ? 0 : Math.max(groups[group].platforms.findIndex(({ name }) => name === saved.platform), 0);
 
   const currentPlatform = () => groups[group].platforms[selected];
+  const watchedEpisode = () => progressOf(show.id)?.episode ?? 0;
+  const progressSource = () => ({ platform: currentPlatform().name, group: groups[group].kind });
+
+  /** Cập nhật dấu đã xem tại chỗ, không vẽ lại trang để video đang phát không bị dừng. */
+  function paintProgress() {
+    const watched = watchedEpisode();
+    root.querySelectorAll('[data-episode]').forEach((item) => {
+      item.classList.toggle('episode--watched', Number(item.dataset.episode) <= watched);
+    });
+    const picker = root.querySelector('[data-watch-progress]');
+    if (picker) picker.value = watched;
+  }
+
+  function markEpisode(episode) {
+    recordEpisode(show.id, episode, progressSource());
+    paintProgress();
+  }
 
   function playEpisode(episode, airing) {
     const platform = currentPlatform();
@@ -342,6 +389,7 @@ export function mountDetail(root, { catalog, showId, backPath }) {
       `Tập ${episodeLabel(platform, episode)} – ${show.title}`,
     ));
     mount(root.querySelector('#player-caption'), playerCaption(platform, airing, episode));
+    markEpisode(episode);
     root.querySelectorAll('.episode[data-play-episode]').forEach((button) => {
       button.setAttribute('aria-pressed', Number(button.dataset.playEpisode) === episode);
     });
@@ -370,7 +418,7 @@ export function mountDetail(root, { catalog, showId, backPath }) {
         <div class="countdown" id="countdown"></div>
         ${show.unavailable
           ? html`<p class="detail-notice">${icon('info')}Hiện chưa có nơi xem bản quyền tại Việt Nam.</p>`
-          : watchSection(show, platform, airing, { groups, group, selected })}
+          : watchSection(show, platform, airing, { groups, group, selected, watched: watchedEpisode() })}
         ${seriesSection(show)}
         ${trailerSection(show)}
         ${overview(show, season)}
@@ -409,8 +457,21 @@ export function mountDetail(root, { catalog, showId, backPath }) {
         playEpisode(Number(episode.dataset.playEpisode), airing);
         return;
       }
+      const opened = event.target.closest('[data-watch-episode]');
+      if (opened) {
+        markEpisode(Number(opened.dataset.watchEpisode));
+        return;
+      }
       const trailer = event.target.closest('[data-trailer]');
       if (trailer) playTrailer(trailer, show.trailer);
+    });
+
+    root.querySelector('.detail').addEventListener('change', (event) => {
+      if (!event.target.matches('[data-watch-progress]')) return;
+      const episode = Number(event.target.value);
+      const stored = episode ? setProgress(show.id, episode, progressSource()) : clearProgress(show.id);
+      paintProgress();
+      if (!stored) notify(html`Trình duyệt không cho lưu tiến độ, nên sẽ mất khi tải lại trang.`);
     });
   }
 
