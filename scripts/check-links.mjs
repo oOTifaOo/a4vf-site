@@ -40,7 +40,9 @@ const FPT_EMPTY_PAGE = /<title[^>]*>\s*FPT Play\s*[-:]/i;
 /** Quá nhiều link cùng hỏng thì nhiều khả năng máy kiểm tra bị chặn, không phải phim bị gỡ. */
 const MAX_BROKEN_SHARE = 0.2;
 const COMMON_WORDS = new Set(["anime", "season", "part", "the", "and", "vietsub", "long", "tieng", "tap", "mua", "phan",
-  "cua", "cho", "mot", "nhung", "muse", "viet", "nam", "ani", "one", "pops", "kids", "movie", "full", "ban", "episode"]);
+  "cua", "cho", "mot", "nhung", "muse", "viet", "nam", "ani", "one", "pops", "kids", "movie", "full", "ban", "episode", "moi", "nhat", "tron"]);
+const PLAYLIST_TITLE = /"playlistMetadataRenderer":\{"title":"((?:[^"\\]|\\.)*)"/;
+const LATEST_VIDEOS = "https://a4vf.net/tap-moi.php?list=";
 const NOT_AN_EPISODE = /trailer|teaser|preview|\bpv\b|tổng hợp|siêu clip|superclip/i;
 const PLAYLIST_ERROR = /playlist does not exist|playlist is private|playlist type is unviewable|danh sách phát[^"]{0,30}(?:không tồn tại|riêng tư)/i;
 
@@ -81,7 +83,9 @@ export async function checkPlaylist(id, fetcher = fetch) {
     body: JSON.stringify({ context: { client: YOUTUBE_CLIENT }, browseId: `VL${id}` }),
   });
   const fromApi = api.status === 200 ? videosFromPage(api.body) : [];
-  if (fromApi.length) return { state: "ok", videos: fromApi };
+  // Máy kiểm tra ở nước ngoài không thấy video bị giới hạn theo vùng, nhưng vẫn thấy tên playlist.
+  const title = PLAYLIST_TITLE.exec(api.body)?.[1];
+  if (fromApi.length || title) return { state: "ok", videos: fromApi, title };
   if (api.status === 200 && PLAYLIST_ERROR.test(api.body)) return { state: "broken", videos: [] };
 
   const page = await download(`https://www.youtube.com/playlist?hl=vi&list=${id}`, fetcher);
@@ -114,12 +118,12 @@ export const checkPage = (url, name, fetcher = fetch) => (name === "Bilibili TV"
 const wordsOf = (text) => normalizeText(text ?? "").split(/[^a-z0-9]+/)
   .filter((word) => word.length >= 3 && !COMMON_WORDS.has(word) && !/^\d+$/.test(word));
 
-/** Không video nào có chung từ với tên phim: có thể gắn nhầm playlist. Chỉ là gợi ý để xem lại. */
-export function looksMismatched(show, videos) {
-  if (!videos.length) return false;
+/** Tên playlist và video không có từ nào chung với tên phim: có thể gắn nhầm. Chỉ là gợi ý để xem lại. */
+export function looksMismatched(show, texts) {
+  if (!texts.length) return false;
   const names = new Set([show.title, show.altTitle, show.englishTitle, ...show.series.map(({ title }) => title)].flatMap(wordsOf));
   if (!names.size) return false;
-  return !videos.some(({ title }) => wordsOf(title).some((word) => names.has(word)));
+  return !texts.some((text) => wordsOf(text).some((word) => names.has(word)));
 }
 
 export function missingEpisodes(show, platform, now) {
@@ -132,6 +136,12 @@ export function missingEpisodes(show, platform, now) {
     if (age >= MISSING_AFTER_MS && !platform.episodeLinks[episode]) missing.push(episode);
   }
   return missing.reverse();
+}
+
+/** Video bị giới hạn theo vùng chỉ đọc được từ host ở Việt Nam, qua chính file trang phim đang dùng. */
+async function latestVideos(id, fetcher) {
+  const { status, body } = await download(`${LATEST_VIDEOS}${id}`, fetcher);
+  try { return status === 200 ? JSON.parse(body).videos ?? [] : []; } catch { return []; }
 }
 
 async function eachLimited(items, work) {
@@ -183,15 +193,15 @@ export async function runChecks(shows, now = Date.now(), fetcher = fetch) {
     if (result.state === "unknown") found.unknown.push({ uses, url, reason: result.reason });
     if (result.state !== "ok") return;
 
+    const texts = [result.title, ...result.videos.map(({ title }) => title)].filter(Boolean);
     for (const use of uses) {
-      if (looksMismatched(use.show, result.videos)) {
-        found.mismatch.push({ ...use, url, sample: result.videos[0].title });
-      }
+      if (looksMismatched(use.show, texts)) found.mismatch.push({ ...use, url, sample: texts[0] });
       const episodes = missingEpisodes(use.show, use.platform, now);
       if (episodes.length) {
-        const listed = new Set(result.videos.filter(({ title }) => !NOT_AN_EPISODE.test(title))
+        const videos = result.videos.length ? result.videos : await latestVideos(id, fetcher);
+        const listed = new Set(videos.filter(({ title }) => !NOT_AN_EPISODE.test(title))
           .map(({ title }) => episodeFromTitle(title) - use.platform.episodeOffset));
-        found.missing.push({ ...use, url, episodes, uploaded: episodes.filter((episode) => listed.has(episode)) });
+        found.missing.push({ ...use, url, episodes, uploaded: episodes.filter((episode) => listed.has(episode)), read: videos.length > 0 });
       }
     }
   });
@@ -251,18 +261,23 @@ export function buildReport(result, now = Date.now()) {
   section("Link hỏng", "Sửa cột link_xem hoặc đánh dấu het_ban_quyen trong Datasheet.",
     broken.map(({ uses, url, reason }) => `${uniqueTitles(uses)}: ${reason}. ${url}`));
   section("Thiếu link tập mới", "Tập đã chiếu hơn 2 ngày mà chưa có link riêng. Người xem vẫn được mở playlist.",
-    missing.map(({ url, episodes, uploaded, ...use }) => {
-      const state = uploaded.length ? `playlist đã có tập ${uploaded.join(", ")}` : "chưa thấy trong playlist, có thể kênh đăng trễ hoặc lịch sai";
+    missing.map(({ url, episodes, uploaded, read, ...use }) => {
+      const notFound = read ? "chưa thấy trong playlist, có thể kênh đăng trễ hoặc lịch sai" : "chưa đọc được danh sách video";
+      const state = uploaded.length ? `playlist đã có tập ${uploaded.join(", ")}` : notFound;
       return `${useLine(use)}: tập ${episodes.join(", ")}, ${state}. ${url}`;
     }));
-  section("Có thể gắn nhầm phim", "Không video nào trong playlist có chung từ với tên phim. Chỉ là nghi ngờ, cần mở ra xem.",
-    mismatch.map(({ url, sample, ...use }) => `${useLine(use)}: playlist có video "${sample}". ${url}`));
+  section("Có thể gắn nhầm phim", "Tên playlist và video không có từ nào chung với tên phim. Chỉ là nghi ngờ, cần mở ra xem.",
+    mismatch.map(({ url, sample, ...use }) => `${useLine(use)}: playlist có "${sample}". ${url}`));
   section("Một playlist gắn nhiều phim", "Có thể đúng nếu kênh gộp nhiều mùa, nhưng nên xem lại.",
     shared.map(({ url, titles }) => `${titles.join("; ")}. ${url}`));
   section("Chưa có link", "", empty.map(useLine));
+  const unknownGroups = {};
+  for (const { uses, reason } of unknown) {
+    const key = `${uses[0].platform.name}: ${reason.replace(/\d{4,} ký tự/, "nhiều ký tự")}`;
+    unknownGroups[key] = (unknownGroups[key] ?? 0) + 1;
+  }
   section("Không kiểm tra được", "Không tính là hỏng. Thường do mạng hoặc nền tảng chặn máy kiểm tra.",
-    unknown.slice(0, 40).map(({ uses, url, reason }) => `${uniqueTitles(uses)}: ${reason}. ${url}`));
-  if (unknown.length > 40) lines.push(`Còn ${unknown.length - 40} link khác không kiểm tra được.`, "");
+    Object.entries(unknownGroups).map(([key, count]) => `${key}: ${count} link`));
   section("Độ tin cậy theo nền tảng", "", Object.entries(detection).map(([name, state]) => `${name}: ${DETECTION_TEXT[state]}`));
   return `${lines.join("\n").trimEnd()}\n`;
 }
