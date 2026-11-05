@@ -12,6 +12,13 @@ const DATA_REFRESH_MS = 60_000;
 /** Cột ngon_ngu trong Sheet đôi khi chứa ngày giờ do nhập lệch cột; khi đó coi như Vietsub. */
 const languageOf = (value) => (/\d{4}-\d{1,2}-\d{1,2}/.test(value) ? 'Vietsub' : value);
 
+/** Link trỏ tới đúng một video đã đăng. Link FPT Play, Netflix được tạo sẵn cả mùa nên không tính. */
+const PUBLISHED_VIDEO = /youtube\.com\/watch|youtu\.be\/|crunchyroll\.com\/watch\//i;
+
+const lastPublishedEpisode = (links) => Math.max(0, ...Object.entries(links ?? {})
+  .filter(([, url]) => PUBLISHED_VIDEO.test(url))
+  .map(([episode]) => Number(episode)));
+
 function normalizePlatform(raw) {
   return {
     name: raw.n,
@@ -21,6 +28,7 @@ function normalizePlatform(raw) {
     isFree: Boolean(raw.free),
     firstAiredAt: raw.first,
     episodeLinks: raw.e ?? {},
+    lastPublishedEpisode: lastPublishedEpisode(raw.e),
     episodeOffset: raw.o ?? 0,
     milestones: raw.m ?? {},
   };
