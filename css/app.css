@@ -619,6 +619,11 @@ time,
   font-weight: 600;
 }
 
+.poster-card__badge--new {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
 /* Tên giữ đúng hai dòng để các thẻ trong một hàng bằng nhau. */
 .poster-card__title {
   display: -webkit-box;
@@ -1066,6 +1071,11 @@ time,
   background: var(--surface);
 }
 
+.episode--watched {
+  color: var(--muted);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
 .episode--latest {
   --bs-btn-hover-bg: var(--accent);
   --bs-btn-hover-color: var(--on-accent);
@@ -1269,7 +1279,21 @@ time,
 .episode[aria-pressed="true"] {
   background: var(--accent);
   border-color: var(--accent);
+  box-shadow: none;
   color: var(--on-accent);
+}
+
+.watch-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.watch-progress .form-select {
+  width: auto;
 }
 
 #episode-schedule .table {
