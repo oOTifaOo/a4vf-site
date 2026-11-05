@@ -9,6 +9,9 @@ import { isFollowing } from './follow.js';
  * Tính lịch một phim trên một nền tảng. Mốc trong gio_cac_tap dời giờ từ tập đó trở đi,
  * các tập sau tính tiếp mỗi tuần.
  */
+/** Lịch lệch hơn số tập này thường là playlist gộp nhiều mùa, không phải tập mới. */
+const MAX_EPISODES_AHEAD = 3;
+
 export function airingOf(show, now, platform = show.platforms[0]) {
   const first = Date.parse(platform.firstAiredAt || show.firstAiredAt);
   const milestoneEpisodes = Object.keys(platform.milestones).map(Number);
@@ -23,6 +26,10 @@ export function airingOf(show, now, platform = show.platforms[0]) {
 
   let aired = 0;
   while (aired < show.episodes && timeOf(aired + 1) <= now) aired += 1;
+
+  // Tập đã có video riêng thì coi như đã chiếu, kể cả khi ngày trong Sheet còn sai.
+  const published = Math.min(platform.lastPublishedEpisode ?? 0, show.episodes);
+  if (published > aired && published - aired <= MAX_EPISODES_AHEAD) aired = published;
 
   const next = aired < show.episodes ? timeOf(aired + 1) : null;
   const status = aired === 0 ? 'soon' : aired >= show.episodes ? 'done' : 'air';
