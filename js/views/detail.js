@@ -214,6 +214,9 @@ function player(platform, airing, episode) {
     </div>`;
 }
 
+/** Tạm ẩn ô tự chỉnh tiến độ, đổi thành true để hiện lại. */
+const SHOW_PROGRESS_PICKER = false;
+
 /** Người xem tự chỉnh tiến độ. Chỉ có tập đã chiếu, cộng thêm tập đã lưu nếu lịch chiếu vừa đổi. */
 function progressPicker(platform, airing, watched) {
   const last = Math.max(airing.aired, watched);
@@ -246,7 +249,7 @@ function watchSection(show, platform, airing, { groups, group, selected, watched
       <ol class="episode-grid list-unstyled">
         ${episodes.map((episode) => episodeButton(platform, airing, episode, playable, watched))}
       </ol>
-      ${progressPicker(platform, airing, watched)}
+      ${SHOW_PROGRESS_PICKER ? progressPicker(platform, airing, watched) : ''}
       <div class="collapse" id="episode-schedule">
         <div class="table-responsive">
           <table class="table table-sm align-middle mb-0">
