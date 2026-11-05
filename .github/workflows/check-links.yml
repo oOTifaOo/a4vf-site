@@ -1,0 +1,39 @@
+# Kiểm tra link xem phim mỗi tuần. Chỉ ghi báo cáo, không sửa dữ liệu của website.
+name: Kiểm tra link
+on:
+  schedule:
+    - cron: "17 23 * * 0"
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/check-links.mjs
+      - name: Lưu báo cáo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/bao-cao-link.md
+          git diff --cached --quiet || (git commit -m "Báo cáo kiểm tra link" && git pull --rebase origin main && git push)
+      - name: Báo vào Issue nếu có vấn đề
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          summary="$(cat data/.tom-tat-link.txt)"
+          [ -n "$summary" ] || exit 0
+          title="Báo cáo kiểm tra link"
+          number="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          body="$summary. Chi tiết: https://github.com/${{ github.repository }}/blob/main/data/bao-cao-link.md"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
