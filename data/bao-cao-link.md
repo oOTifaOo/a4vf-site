@@ -1,19 +1,19 @@
 # Báo cáo kiểm tra link
 
-Chạy lúc 2026-11-05 09:25 giờ Việt Nam. Đã kiểm tra 577 playlist YouTube và 619 trang FPT Play, Bilibili TV.
+Chạy lúc 2026-11-09 09:40 giờ Việt Nam. Đã kiểm tra 578 playlist YouTube và 619 trang FPT Play, Bilibili TV.
 
 - Link hỏng: 0
 - Thiếu link tập mới: 1
 - Có thể gắn nhầm phim: 2
 - Một playlist gắn nhiều phim: 6
 - Chưa có link: 0
-- Không kiểm tra được: 379
+- Không kiểm tra được: 377
 
 ## Thiếu link tập mới
 
 Tập đã chiếu hơn 2 ngày mà chưa có link riêng. Người xem vẫn được mở playlist.
 
-- Pokémon: Chân Trời Mới (POPS, id 158871): tập 154, 155, chưa đọc được danh sách video. https://www.youtube.com/playlist?list=PLHnMhWQQpOSs
+- Pokémon: Chân Trời Mới (POPS, id 158871): tập 155, 156, chưa đọc được danh sách video. https://www.youtube.com/playlist?list=PLHnMhWQQpOSs
 
 ## Có thể gắn nhầm phim
 
@@ -37,7 +37,7 @@ Có thể đúng nếu kênh gộp nhiều mùa, nhưng nên xem lại.
 
 Không tính là hỏng. Thường do mạng hoặc nền tảng chặn máy kiểm tra.
 
-- Bilibili TV: HTTP 412, mã null: 379 link
+- Bilibili TV: HTTP 412, mã null: 377 link
 
 ## Độ tin cậy theo nền tảng
 
