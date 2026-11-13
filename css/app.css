@@ -338,7 +338,7 @@ time,
 
 @media (min-width: 768px) {
   .search-filters {
-    grid-template-columns: minmax(0, 14rem) minmax(0, 14rem) auto auto 1fr;
+    grid-template-columns: repeat(2, minmax(0, 14rem)) minmax(0, 12rem) auto auto 1fr;
   }
 }
 
