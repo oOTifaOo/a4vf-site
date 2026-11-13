@@ -49,8 +49,8 @@ function sortMenu(selected) {
     </div>`;
 }
 
-/** Thẻ rộng có mô tả nên chỉ 2 cột trên màn hình lớn. */
-const SEASON_GRID_CLASS = 'row row-cols-1 row-cols-lg-2 g-3 list-unstyled';
+/** Số cột tự theo độ rộng màn hình, xem .season-grid trong app.css. */
+const SEASON_GRID_CLASS = 'season-grid list-unstyled';
 
 function emptyResult({ mine, query }) {
   if (query.trim()) {
