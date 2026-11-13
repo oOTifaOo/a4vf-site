@@ -20,6 +20,13 @@ const selectFilter = (name, label, allLabel, options, selected) => html`
     </select>
   </div>`;
 
+/** Chỉ các mùa có phim, mùa mới nhất đứng đầu, tên ngắn "Mùa Thu 2026". */
+function seasonOptions(seasons, items) {
+  const used = new Set(items.map(({ season }) => season));
+  return seasons.filter(({ key }) => used.has(key)).reverse()
+    .map(({ key, name }) => ({ value: key, label: name.replace(/^Anime /, '') }));
+}
+
 export function mountSearch(root, { catalog, state }) {
   const filters = state.search;
 
@@ -34,6 +41,7 @@ export function mountSearch(root, { catalog, state }) {
       <div class="search-filters">
         ${selectFilter('genre', 'Thể loại', 'Tất cả thể loại', allGenres(catalog.shows).map((genre) => ({ value: genre, label: genre })), filters.genre)}
         ${selectFilter('platform', 'Nền tảng', 'Tất cả nền tảng', PLATFORM_PAGES.map(({ slug, label }) => ({ value: slug, label })), filters.platform)}
+        ${selectFilter('season', 'Mùa', 'Tất cả các mùa', seasonOptions(catalog.seasons, catalog.shows), filters.season)}
         ${selectFilter('language', 'Bản dịch', 'Tất cả', SEARCH_LANGUAGES, filters.language)}
         <div class="search-filter search-filter--free">
           ${freeToggle(filters.free)}
@@ -57,7 +65,7 @@ export function mountSearch(root, { catalog, state }) {
 
   function refresh() {
     const now = Date.now();
-    clear.hidden = !(filters.genre || filters.platform || filters.free || filters.language !== DEFAULT_LANGUAGE);
+    clear.hidden = !(filters.genre || filters.platform || filters.season || filters.free || filters.language !== DEFAULT_LANGUAGE);
     const knownIds = new Set(catalog.shows.map((show) => show.id));
     let shows = searchShows(catalog.shows, filters, now);
     let older = searchArchive(archive, filters, knownIds);
@@ -90,6 +98,7 @@ export function mountSearch(root, { catalog, state }) {
         form.elements.language.value = 'dub';
       }
     }
+    if (target.name === 'season') filters.season = target.value;
     if (target.name === 'language') filters.language = target.value;
     if (target.name === 'free') filters.free = target.checked;
     filters.limit = PAGE_SIZE;
@@ -102,9 +111,10 @@ export function mountSearch(root, { catalog, state }) {
   });
 
   clear.addEventListener('click', () => {
-    Object.assign(filters, { genre: '', platform: '', free: false, language: DEFAULT_LANGUAGE, limit: PAGE_SIZE });
+    Object.assign(filters, { genre: '', platform: '', season: '', free: false, language: DEFAULT_LANGUAGE, limit: PAGE_SIZE });
     form.elements.genre.value = '';
     form.elements.platform.value = '';
+    form.elements.season.value = '';
     form.elements.language.value = DEFAULT_LANGUAGE;
     form.elements.free.checked = false;
     refresh();
@@ -114,7 +124,13 @@ export function mountSearch(root, { catalog, state }) {
   refresh();
   loadArchiveIndex().then((items) => {
     archive = items;
-    if (items.length && results.isConnected) refresh();
+    if (!items.length || !results.isConnected) return;
+    // Thêm các mùa cũ chỉ có trong kho vào danh sách chọn mùa.
+    const select = form.elements.season;
+    const options = seasonOptions(catalog.seasons, [...catalog.shows, ...items]);
+    select.replaceChildren(new Option('Tất cả các mùa', ''), ...options.map(({ value, label }) => new Option(label, value)));
+    select.value = filters.season;
+    refresh();
   });
   return { refresh };
 }
