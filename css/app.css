@@ -660,6 +660,45 @@ time,
   font-size: 0.6875rem;
 }
 
+/* Lưới Theo mùa: mỗi thẻ cần khoảng 420px, màn hình càng rộng càng nhiều cột (laptop 3, Full HD 4, 2K 5). */
+main.container:has(.season-grid) {
+  max-width: min(100%, 2400px);
+}
+
+.season-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 26.25rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+}
+
+.season-grid > .col-12 {
+  grid-column: 1 / -1;
+}
+
+/* Thẻ hẹp nên logo và tag xếp hai hàng, mô tả 6 dòng. */
+@media (min-width: 576px) {
+  .season-grid .show-card--synopsis .poster {
+    flex-basis: 9.5rem;
+    width: 9.5rem;
+    min-height: 13.5rem;
+  }
+
+  .season-grid .show-card__synopsis {
+    --synopsis-lines: 6;
+  }
+
+  .season-grid .show-card--synopsis .show-card__foot {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .season-grid .show-card--synopsis .show-card__tags {
+    justify-content: flex-start;
+  }
+}
+
 /* Thẻ poster đứng ở phần Hôm nay. */
 .poster-card {
   position: relative;
