@@ -2,9 +2,9 @@
 
 import { emptyState, icon, menuButton } from '../components/common.js';
 import { bindFilters, describeLanguage, freeToggle, languageFilter, mineToggle } from '../components/filters.js';
-import { SHOW_GRID_CLASS, showGrid } from '../components/show-card.js';
+import { showGrid } from '../components/show-card.js';
 import { SEASON_ICONS, SORTS } from '../config.js';
-import { loadSeasonIfArchived } from '../domain/archive.js';
+import { loadSeasonIfArchived, loadSynopsis } from '../domain/archive.js';
 import { selectSeasonShows } from '../domain/shows.js';
 import { html, mount } from '../lib/html.js';
 import { PATHS, seasonPath } from '../lib/paths.js';
@@ -49,6 +49,9 @@ function sortMenu(selected) {
     </div>`;
 }
 
+/** Thẻ rộng có mô tả nên chỉ 2 cột trên màn hình lớn. */
+const SEASON_GRID_CLASS = 'row row-cols-1 row-cols-lg-2 g-3 list-unstyled';
+
 function emptyResult({ mine, query }) {
   if (query.trim()) {
     return html`
@@ -81,21 +84,32 @@ export function mountSeasonList(root, { catalog, state }) {
         <p class="visually-hidden" id="result-count" role="status" aria-atomic="true"></p>
       </form>
       <h2 class="visually-hidden">Danh sách anime</h2>
-      <ul class="${SHOW_GRID_CLASS}" id="show-grid"></ul>
+      <ul class="${SEASON_GRID_CLASS}" id="show-grid"></ul>
     </section>`);
 
   const grid = root.querySelector('#show-grid');
   const form = root.querySelector('#list-filters');
   const count = root.querySelector('#result-count');
 
+  // Mô tả phim gần đây nằm ở file riêng theo mùa: tải xong thì vẽ lại một lần.
+  function loadMissingSynopses(shows) {
+    const pending = shows.filter((show) => show.synopsisPending && !show.synopsisLoading);
+    if (!pending.length) return;
+    pending.forEach((show) => { show.synopsisLoading = true; });
+    Promise.all(pending.map(loadSynopsis)).then(() => {
+      if (grid.isConnected) refresh();
+    });
+  }
+
   function refresh() {
     const now = Date.now();
     const shows = selectSeasonShows(catalog.shows, filters, now);
+    loadMissingSynopses(shows);
     const parts = [`${shows.length} anime`, describeLanguage(filters.language), filters.free && 'Free', filters.mine && 'Phim của tôi'];
     count.textContent = parts.filter(Boolean).join(' · ');
 
     mount(grid, shows.length
-      ? html`${showGrid(shows, now, { showCountdown: filters.mine })}`
+      ? html`${showGrid(shows, now, { showCountdown: filters.mine, synopsis: true })}`
       : html`<li class="col-12">${emptyResult(filters)}</li>`);
   }
 
