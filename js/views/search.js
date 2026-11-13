@@ -1,8 +1,8 @@
 /* "Tìm Anime": tìm trong mọi mùa theo tên (có dấu hay không dấu đều được) và thể loại. */
 
 import { emptyState, icon } from '../components/common.js';
-import { archiveCard, SHOW_GRID_CLASS, showGrid } from '../components/show-card.js';
-import { loadArchiveIndex } from '../domain/archive.js';
+import { archiveCard, showGrid } from '../components/show-card.js';
+import { loadArchiveIndex, loadArchiveSynopsis, loadSynopsis } from '../domain/archive.js';
 import { freeToggle } from '../components/filters.js';
 import { PLATFORM_PAGES, SEARCH_LANGUAGES } from '../config.js';
 import { allGenres, searchArchive, searchShows } from '../domain/shows.js';
@@ -51,7 +51,7 @@ export function mountSearch(root, { catalog, state }) {
       <p class="filter-bar__count" id="result-count" role="status" aria-atomic="true"></p>
     </form>
     <h2 class="visually-hidden">Kết quả</h2>
-    <ul class="${SHOW_GRID_CLASS}" id="search-results"></ul>
+    <ul class="season-grid list-unstyled" id="search-results"></ul>
     <div class="search-more">
       <button class="btn btn-outline-primary" type="button" id="search-more" hidden></button>
     </div>`);
@@ -62,6 +62,17 @@ export function mountSearch(root, { catalog, state }) {
   const clear = root.querySelector('#search-clear');
   const more = root.querySelector('#search-more');
   let archive = [];
+
+  // Mô tả nằm ở file riêng theo mùa: chỉ tải cho các phim đang hiện, tải xong vẽ lại một lần.
+  function loadMissingSynopses(shows, older) {
+    const pending = [...shows, ...older].filter((item) => item.synopsisPending && !item.synopsisLoading);
+    if (!pending.length) return;
+    pending.forEach((item) => { item.synopsisLoading = true; });
+    const isArchived = new Set(older);
+    Promise.all(pending.map((item) => (isArchived.has(item) ? loadArchiveSynopsis(item) : loadSynopsis(item)))).then(() => {
+      if (results.isConnected) refresh();
+    });
+  }
 
   function refresh() {
     const now = Date.now();
@@ -81,8 +92,10 @@ export function mountSearch(root, { catalog, state }) {
     count.textContent = `${total} anime${widened && total ? ' ở bản dịch khác' : ''}`;
     more.hidden = total <= filters.limit;
     more.textContent = `Xem thêm (còn ${total - filters.limit} phim)`;
+    const visibleShows = shows.slice(0, filters.limit);
+    loadMissingSynopses(visibleShows, visibleOlder);
     mount(results, total
-      ? html`${showGrid(shows.slice(0, filters.limit), now)}${visibleOlder.map(archiveCard)}`
+      ? html`${showGrid(visibleShows, now, { synopsis: true })}${visibleOlder.map((item) => archiveCard(item, { synopsis: true }))}`
       : html`<li class="col-12">${emptyState('search_off', filters.language ? 'Không tìm thấy trong bản dịch này. Hãy thử chọn Bản dịch: Tất cả.' : 'Không tìm thấy anime nào. Hãy thử tên khác.')}</li>`);
   }
 
