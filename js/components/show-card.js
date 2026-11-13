@@ -72,19 +72,23 @@ export function showCard(show, now, { showCountdown = false, synopsis = false } 
 }
 
 /** Thẻ gọn cho phim cũ trong kết quả tìm kiếm, dữ liệu đầy đủ chỉ tải khi mở trang phim. */
-export const archiveCard = (item) => html`
+export const archiveCard = (item, { synopsis = false } = {}) => html`
   <li class="col">
-    <article class="show-card">
-      ${poster(item)}
+    <article class="show-card ${synopsis ? 'show-card--synopsis' : ''}">
+      ${poster(item, '', { sharp: synopsis })}
       <div class="show-card__body">
         ${statusBadge('done')}
         <h3 class="show-card__title"><a class="stretched-link" href="${showPath(item.id, item.title)}" title="${item.title}">${item.title}</a></h3>
-        ${platformMarks(item.platforms)}
+        ${synopsis ? synopsisLine(item) : ''}
+        <div class="show-card__foot">
+          ${platformMarks(item.platforms)}
+          ${synopsis && item.genres.length ? html`<ul class="chip-list show-card__tags">${item.genres.map(chip)}</ul>` : ''}
+        </div>
       </div>
     </article>
   </li>`;
 
 export const showGrid = (shows, now, options) => shows.map((show) => showCard(show, now, options));
 
-/** Lưới chung cho Theo mùa và Tìm Anime. */
+/** Lưới cũ 3 cột, còn dùng ở các trang nền tảng. */
 export const SHOW_GRID_CLASS = 'row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 list-unstyled';
