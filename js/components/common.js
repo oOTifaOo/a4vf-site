@@ -27,12 +27,16 @@ export function externalLink(url) {
 }
 
 /** Bìa tạo sẵn nằm dưới ảnh thật, nên ảnh lỗi vẫn còn bìa để hiện. */
-export function poster(show, size = '', { alt = '', eager = false } = {}) {
+/** Ảnh AniList có bản cỡ lớn: màn hình độ phân giải cao dùng bản này cho poster to. */
+const sharpSource = (url) => (/\/cover\/medium\//.test(url)
+  ? html`srcset="${url} 230w, ${url.replace('/cover/medium/', '/cover/large/')} 460w" sizes="13rem"` : '');
+
+export function poster(show, size = '', { alt = '', eager = false, sharp = false } = {}) {
   const hasImage = /^(https?:|data:image\/)/i.test(show.poster);
   return html`
     <span class="poster ${size}" style="--poster-hue:${hueOf(show.title)}" aria-hidden="true">
       <span class="poster__initials">${initialsOf(show.title)}</span>
-      ${hasImage ? html`<img class="poster__image" src="${show.poster}" alt="${alt}" ${eager ? html`fetchpriority="high"` : html`loading="lazy" decoding="async"`} referrerpolicy="no-referrer" data-remove-on-error>` : ''}
+      ${hasImage ? html`<img class="poster__image" src="${show.poster}" ${sharp ? sharpSource(show.poster) : ''} alt="${alt}" ${eager ? html`fetchpriority="high"` : html`loading="lazy" decoding="async"`} referrerpolicy="no-referrer" data-remove-on-error>` : ''}
     </span>`;
 }
 
