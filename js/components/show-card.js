@@ -37,26 +37,35 @@ function episodeProgress(show, airing) {
     </div>`;
 }
 
+/** Mô tả cắt bớt, phần còn lại đọc ở trang phim. Khi mô tả đang tải thì giữ chỗ để thẻ không nhảy. */
+function synopsisLine(show) {
+  if (show.synopsisPending) return html`<p class="show-card__synopsis show-card__synopsis--pending" aria-hidden="true"></p>`;
+  if (!show.synopsis) return html`<p class="show-card__synopsis show-card__synopsis--empty">Chưa có mô tả.</p>`;
+  return html`<p class="show-card__synopsis">${show.synopsis}</p>`;
+}
+
 /** Thẻ ngang: logo nền tảng một hàng riêng, phụ đề và thể loại tối đa hai hàng để các thẻ bằng nhau. */
-export function showCard(show, now, { showCountdown = false } = {}) {
+export function showCard(show, now, { showCountdown = false, synopsis = false } = {}) {
   const airing = airingOf(show, now);
   return html`
     <li class="col">
-      <article class="show-card">
+      <article class="show-card ${synopsis ? 'show-card--synopsis' : ''}">
         ${followButton(show)}
-        ${poster(show)}
+        ${poster(show, '', { sharp: synopsis })}
         <div class="show-card__body">
           ${statusBadge(airing.status)}
           <h3 class="show-card__title"><a class="stretched-link" href="${showPath(show.id, show.title)}" title="${show.title}">${show.title}</a></h3>
           ${airingLine(show, airing)}
           ${showCountdown ? followCountdown(show, airing, now) : ''}
-          ${episodeProgress(show, airing)}
-          <div class="platform-logos">${show.platforms.map(platformLogo)}</div>
-          <ul class="chip-list show-card__tags">
-            ${show.isFree ? html`<li class="chip chip--free">Free</li>` : ''}
-            ${show.languages.map(languageChip)}
-            ${show.genres.map(chip)}
-          </ul>
+          ${synopsis ? synopsisLine(show) : episodeProgress(show, airing)}
+          <div class="show-card__foot">
+            <div class="platform-logos">${show.platforms.map(platformLogo)}</div>
+            <ul class="chip-list show-card__tags">
+              ${show.isFree ? html`<li class="chip chip--free">Free</li>` : ''}
+              ${show.languages.map(languageChip)}
+              ${show.genres.map(chip)}
+            </ul>
+          </div>
         </div>
       </article>
     </li>`;
