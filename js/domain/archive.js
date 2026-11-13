@@ -22,6 +22,7 @@ const toItem = (raw) => ({
   platforms: (raw.p ?? []).map((name) => ({ name })),
   platformNames: raw.p ?? [],
   freePlatformNames: raw.f ?? [],
+  synopsisPending: true,
 });
 
 let index;
@@ -62,6 +63,20 @@ export async function loadSynopsis(show) {
   const synopses = await synopsisSeasons.get(show.season);
   show.synopsis = synopses?.[show.id] ?? '';
   show.synopsisPending = false;
+}
+
+/** Mô tả phim cũ nằm trong file mùa đầy đủ; chỉ lấy mô tả, không thêm phim vào catalog. */
+const archiveSynopsisSeasons = new Map();
+
+export async function loadArchiveSynopsis(item) {
+  if (!archiveSynopsisSeasons.has(item.season)) {
+    archiveSynopsisSeasons.set(item.season, fetchJson(`/du-lieu/mua-${item.season}.json`)
+      .then((rawShows) => Object.fromEntries(rawShows.map((raw) => [raw.id, raw.d ?? ''])))
+      .catch(() => ({})));
+  }
+  const synopses = await archiveSynopsisSeasons.get(item.season);
+  item.synopsis = synopses[item.id] ?? '';
+  item.synopsisPending = false;
 }
 
 export async function loadArchivedShow(catalog, id) {
