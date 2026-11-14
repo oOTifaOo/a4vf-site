@@ -1,7 +1,7 @@
 /* "Tier List": kéo thả hoặc chạm để xếp phim của một mùa, rồi xuất ảnh và link chia sẻ.
    Bảng lưu riêng theo từng mùa trong trình duyệt. Link chia sẻ mở ở chế độ chỉ xem. */
 
-import { emptyState, icon, poster } from '../components/common.js';
+import { emptyState, icon, poster, sakuraLoader } from '../components/common.js';
 import { bindFilters, languageFilter, mineToggle } from '../components/filters.js';
 import { SEASON_ICONS } from '../config.js';
 import { defaultSeason } from '../domain/catalog.js';
@@ -185,7 +185,7 @@ function createShareDialog(root, { getExport, getLink, fileName, withTitles, onW
     const id = renderId;
     setReady(false);
     releaseImage();
-    mount(preview, html`<div class="spinner-border" role="status"><span class="visually-hidden">Đang tạo ảnh…</span></div>`);
+    mount(preview, sakuraLoader('Đang tạo ảnh…'));
     status.textContent = 'Đang tạo ảnh…';
 
     try {
