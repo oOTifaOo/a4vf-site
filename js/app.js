@@ -10,6 +10,7 @@ import { aboutSeo, homeSeo, mineSeo, notFoundSeo, platformSeo, searchSeo, season
 import { html, mount } from './lib/html.js';
 import { hasVietnameseRelease, legacyHashPath, PATHS, seasonKeyFromSlug, showPath } from './lib/paths.js';
 import { initAnalytics, trackPageView } from './ui/analytics.js';
+import { initEffects } from './ui/effects.js';
 import { initPageActions } from './ui/feedback.js';
 import { initImageFallbacks } from './ui/images.js';
 import { initInstall } from './ui/install.js';
@@ -252,6 +253,7 @@ async function start() {
   initTooltips();
   initImageFallbacks();
   initPageActions({ onFollowChange });
+  initEffects();
   initInstall();
   initReports({ findShow: (id) => catalog?.shows.find((show) => show.id === id) ?? null });
 
