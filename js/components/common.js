@@ -53,9 +53,22 @@ export function languageChip(language) {
   return html`<li class="chip chip--${languageKind(language)}">${language}</li>`;
 }
 
+/** Lỗi thật thì giữ biểu tượng; danh sách trống thì linh vật A4VF ra đỡ buồn. */
+const ERROR_ICONS = new Set(['error', 'cloud_off', 'link_off']);
+
 export function emptyState(iconName, message) {
-  return html`<div class="empty-state">${icon(iconName)}<p class="mb-0">${message}</p></div>`;
+  const art = ERROR_ICONS.has(iconName)
+    ? icon(iconName)
+    : html`<img class="empty-state__mascot" src="/images/linh-vat-404.webp" width="389" height="640" alt="" loading="lazy" decoding="async">`;
+  return html`<div class="empty-state">${art}<p class="mb-0">${message}</p></div>`;
 }
+
+/** Vòng hoa anh đào thay vòng xoay chờ mặc định. */
+export const sakuraLoader = (label = 'Đang tải…') => html`
+  <div class="sakura-loader" role="status">
+    <span class="sakura-loader__ring" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+    <span class="sakura-loader__text">${label}</span>
+  </div>`;
 
 /** Nút sao theo dõi. Màu và độ đầy của sao đi theo aria-pressed trong CSS. */
 export function followButton(show, className = 'follow-btn') {
