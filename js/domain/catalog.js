@@ -2,6 +2,7 @@
    file này đổi chúng sang tên dễ đọc. Nếu định dạng data.js đổi, chỉ cần sửa file này. */
 
 import { REMOTE_DATA_URL, SEASON_NAMES } from '../config.js';
+import { loadPeople } from './people.js';
 import { languageKind } from './shows.js';
 
 const DUB_PATTERN = /lồng/i;
@@ -31,6 +32,11 @@ function normalizePlatform(raw) {
     lastPublishedEpisode: lastPublishedEpisode(raw.e),
     episodeOffset: raw.o ?? 0,
     milestones: raw.m ?? {},
+    credits: {
+      translators: raw.cr?.dg ?? [],
+      dubbers: raw.cr?.lt ?? [],
+      voices: (raw.cr?.vo ?? []).map(([character, person]) => ({ character, person })),
+    },
   };
 }
 
@@ -70,6 +76,10 @@ export function normalizeShow(raw, index) {
     websiteUrl: raw.web ?? '',
     xUrl: raw.x ?? '',
     trailer: raw.tr ?? null,
+    // Nhân vật và seiyuu lấy từ AniList, nằm riêng ở du-lieu/nhan-vat-<mùa>.json và chỉ tải khi mở tab.
+    cast: normalizeCast(raw.ch),
+    hasCast: Boolean(raw.hc || raw.ch?.length),
+    castPending: Boolean(raw.hc && !raw.ch),
     nsfw: Boolean(raw.nsfw),
     unavailable: Boolean(raw.gone),
     platformNames: allPlatforms.map((platform) => platform.name),
@@ -80,6 +90,13 @@ export function normalizeShow(raw, index) {
     languages: languagesOf(platforms),
     filterLanguages: languagesOf(allPlatforms),
   };
+}
+
+export function normalizeCast(list) {
+  return (list ?? []).map(({ c, n, r, img, va }) => ({
+    id: c, name: n, isMain: r === 'M', image: img ?? '',
+    voice: va ? { id: va.id, name: va.n, nativeName: va.j ?? '', image: va.img ?? '' } : null,
+  }));
 }
 
 function normalizeSeason(raw) {
@@ -118,12 +135,13 @@ async function loadDataFile() {
 
 /** Tải data.js rồi đọc SEASONS và SHOWS do file đó tạo ra. */
 export async function loadCatalog() {
+  const people = loadPeople(); // tải song song với data.js
   await loadDataFile();
   /* global SEASONS, SHOWS */
   if (typeof SEASONS === 'undefined' || typeof SHOWS === 'undefined') {
     throw new Error('data.js chưa tải được');
   }
-  return normalizeCatalog(SEASONS, SHOWS);
+  return { ...normalizeCatalog(SEASONS, SHOWS), people: await people };
 }
 
 /** Dùng chung cho website và scripts/build.mjs. */
