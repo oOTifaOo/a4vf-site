@@ -28,6 +28,18 @@ const today = new Date(now).toISOString().slice(0, 10);
 const escapeXml = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 const escapeAttr = (text) => String(text).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 
+/** Người đã đồng ý hiện tên, kèm id phim họ tham gia (w). Chưa có file thì coi như chưa có ai. */
+async function loadPeople() {
+  try {
+    return JSON.parse(await readFile(join(root, "nhan-su.json"), "utf8")).filter((person) => person.shown);
+  } catch {
+    return [];
+  }
+}
+const personPagePath = (person) => `/nhan-su/${person.id}`;
+/** Giống MIN_INDEXED_WORKS trong js/domain/seo.js: trang có ít phim quá không đưa vào sitemap. */
+const MIN_INDEXED_WORKS = 3;
+
 async function loadCatalog() {
   const context = {};
   vm.createContext(context);
@@ -66,7 +78,15 @@ async function writeData({ rawSeasons, rawShows, shows }) {
   for (const key of new Set(older.map((raw) => raw.s))) {
     await writeFile(join(dist, "du-lieu", `mua-${key}.json`), JSON.stringify(older.filter((raw) => raw.s === key)));
   }
-  console.log(`data.js: ${recent.length} phim; kho tra cứu: ${older.length} phim.`);
+  // Nhân vật + seiyuu: một file mỗi mùa, trang phim chỉ tải khi người xem mở tab Thông tin chi tiết.
+  let cast = {};
+  try { cast = JSON.parse(await readFile(join(root, "data/nhan-vat.json"), "utf8")); } catch { /* chưa có nhân vật */ }
+  const withCast = rawShows.filter((raw) => raw.hc && cast[raw.id]?.ch?.length);
+  for (const key of new Set(withCast.map((raw) => raw.s))) {
+    const entries = withCast.filter((raw) => raw.s === key).map((raw) => [raw.id, cast[raw.id].ch]);
+    await writeFile(join(dist, "du-lieu", `nhan-vat-${key}.json`), JSON.stringify(Object.fromEntries(entries)));
+  }
+  console.log(`data.js: ${recent.length} phim; kho tra cứu: ${older.length} phim; ${withCast.length} phim có nhân vật.`);
 }
 
 const sha = (data) => createHash("sha256").update(data).digest("hex");
@@ -99,7 +119,7 @@ function lastChange(show) {
   return new Date(Math.min(time, now)).toISOString().slice(0, 10);
 }
 
-function sitemap({ seasons, shows }) {
+function sitemap({ seasons, shows }, people) {
   const listed = shows.filter(isIndexable);
   const keys = new Set(listed.map((show) => show.season));
   const entries = [
@@ -107,6 +127,7 @@ function sitemap({ seasons, shows }) {
     ...PLATFORM_PAGES.map((platform) => [platformPath(platform.slug), today]),
     ...seasons.filter((season) => keys.has(season.key)).map((season) => [seasonPath(season.key), today]),
     ...listed.map((show) => [showPath(show.id, show.title), lastChange(show)]),
+    ...people.filter((person) => (person.w ?? []).length >= MIN_INDEXED_WORKS).map((person) => [personPagePath(person), ""]),
   ];
   const urls = entries.map(([path, date]) =>
     `  <url><loc>${escapeXml(SITE_URL + path)}</loc>${date ? `<lastmod>${date}</lastmod>` : ""}</url>`);
@@ -178,6 +199,7 @@ async function capture(paths) {
 
 async function main() {
   const catalog = await loadCatalog();
+  const people = await loadPeople();
   await rm(dist, { recursive: true, force: true });
   await mkdir(dist, { recursive: true });
   const version = await codeVersion();
@@ -197,17 +219,19 @@ async function main() {
   await writeFile(join(dist, assets, "js/config.js"), config.replace(/REMOTE_DATA_URL = '[^']*'/, "REMOTE_DATA_URL = ''"));
   await writeFile(join(dist, "sw.js"), (await readFile(join(root, "sw.js"), "utf8")).replace("__VERSION__", version));
   await writeData(catalog);
+  await writeFile(join(dist, "nhan-su.json"), JSON.stringify(people));
   const key = (await readFile(join(root, "deploy/indexnow-key.txt"), "utf8")).trim();
   await writeFile(join(dist, `${key}.txt`), key);
   await writeFile(join(dist, ".nojekyll"), "");
   await writeFile(join(dist, "CNAME"), `${new URL(SITE_URL).hostname}\n`);
-  await writeFile(join(dist, "sitemap.xml"), sitemap(catalog));
+  await writeFile(join(dist, "sitemap.xml"), sitemap(catalog, people));
 
   const paths = [
     PATHS.home, PATHS.seasons, PATHS.search, PATHS.tierList, PATHS.about,
     ...PLATFORM_PAGES.map((platform) => platformPath(platform.slug)),
     ...catalog.seasons.map((season) => seasonPath(season.key)),
     ...catalog.shows.map((show) => showPath(show.id, show.title)),
+    ...people.map(personPagePath),
     PATHS.mine, // để cuối vì trang này bật bộ lọc "Phim của tôi"
     "/404",
   ];
