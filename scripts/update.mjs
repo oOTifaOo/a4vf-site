@@ -1,6 +1,7 @@
 // Tạo data.js từ AniList + Google Sheet (data/links.csv). Cần Node 18 trở lên.
 // Chạy thử: SHEET_CSV_URL="https://..." node scripts/update.mjs
 import { groupSeries, loadRelations } from "./series.mjs";
+import { creditsOf, loadPeople, updateCast, writePeople } from "./people.mjs";
 import { readFile, writeFile } from "node:fs/promises";
 
 const WEEK = 7 * 864e5;
@@ -253,6 +254,8 @@ function firstAirMs(m) {
 
 async function main() {
   const sheet = await loadSheet();
+  const people = await loadPeople(parseCSV, cleanUrl);
+  const known = new Set(people.map((person) => person.id));
   const ids = [...sheet.keys()], media = [], seen = new Set();
   for (let i = 0; i < ids.length; i += 50) {
     for (const m of (await gql(QUERY, { ids: ids.slice(i, i + 50), page: 1 })).media) { media.push(m); seen.add(m.id); }
@@ -291,6 +294,7 @@ async function main() {
       const manual = alignEpisodes(parseEps(episodeText), count, Number(row.lech_tap) || 0);
       const e = { ...fptEpisodes(link, count), ...netflixEpisodes(link, count), ...manual.links };
       const ms = parseMilestones(row.gio_cac_tap);
+      const cr = creditsOf(row, known);
       return {
         n: row.nen_tang || "Chưa rõ",
         u: cleanUrl(row.link_xem) || "#",
@@ -301,6 +305,7 @@ async function main() {
         ...(Object.keys(e).length ? { e } : {}),
         ...(manual.offset ? { o: manual.offset } : {}),
         ...(Object.keys(ms).length ? { m: ms } : {}),
+        ...(cr ? { cr } : {}),
       };
     }).filter(Boolean);
     if (!ps.length) { console.warn("Bỏ qua (thiếu ngày chiếu):", m.id); continue; }
@@ -328,6 +333,10 @@ async function main() {
   }
   if (!shows.length) throw new Error("Không dựng được phim nào, giữ nguyên data.js cũ.");
   await addSeries(shows, sheet);
+  // Nhân vật chỉ lấy cho phim có trong Sheet (có bản Việt). hc=1: trang phim có tab nhân vật.
+  const cast = await updateCast(shows.filter((show) => sheet.has(show.id) && !show.nsfw).map((show) => show.id), gql);
+  for (const show of shows) if (cast[show.id]?.ch?.length) show.hc = 1;
+  await writePeople(people, shows);
   const keys = [...new Set(shows.map((s) => s.s))].sort((a, b) => {
     const [sa, ya] = a.split("-"), [sb, yb] = b.split("-");
     return ya - yb || SEASON_ORDER[sa] - SEASON_ORDER[sb];
