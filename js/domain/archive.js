@@ -1,7 +1,7 @@
 /* Phim mùa cũ không nằm trong data.js để trang tải nhanh.
    kho.json là chỉ mục gọn cho tìm kiếm; dữ liệu đầy đủ theo từng mùa ở /du-lieu/mua-<mùa>.json, chỉ tải khi cần. */
 
-import { normalizeShow } from './catalog.js';
+import { normalizeCast, normalizeShow } from './catalog.js';
 
 const REFRESH_MS = 36e5;
 
@@ -92,6 +92,29 @@ export async function loadArchivedPlatforms(catalog, names) {
   const keys = new Set(items
     .filter((item) => item.platforms.some(({ name }) => names.includes(name)))
     .map((item) => item.season));
+  const counts = await Promise.all([...keys].map((key) => loadSeason(catalog, key)));
+  return counts.some(Boolean);
+}
+
+/** Nhân vật và seiyuu (AniList) theo từng mùa; chỉ tải khi người xem mở tab Thông tin chi tiết. */
+const castSeasons = new Map();
+
+export async function loadCast(show) {
+  if (!castSeasons.has(show.season)) {
+    castSeasons.set(show.season, fetchJson(`/du-lieu/nhan-vat-${show.season}.json`).catch(() => ({})));
+  }
+  const casts = await castSeasons.get(show.season);
+  show.cast = normalizeCast(casts?.[show.id]);
+  show.hasCast = show.cast.length > 0;
+  show.castPending = false;
+}
+
+/** Tải các phim mùa cũ trong danh sách id (ví dụ phim của một dịch giả). Trả về true nếu có phim mới. */
+export async function loadArchivedIds(catalog, ids) {
+  const wanted = new Set(ids);
+  const known = new Set(catalog.shows.map((show) => show.id));
+  const items = await loadArchiveIndex();
+  const keys = new Set(items.filter((item) => wanted.has(item.id) && !known.has(item.id)).map((item) => item.season));
   const counts = await Promise.all([...keys].map((key) => loadSeason(catalog, key)));
   return counts.some(Boolean);
 }
