@@ -1,6 +1,6 @@
 # BEGIN A4VF Cache
 # Dữ liệu phim: trình duyệt hỏi lại server mỗi lần mở trang, file không đổi thì chỉ nhận 304.
-<FilesMatch "^(data\.js|kho\.json|mo-ta-.*\.json|mua-.*\.json)$">
+<FilesMatch "^(data\.js|kho\.json|nhan-su\.json|mo-ta-.*\.json|mua-.*\.json|nhan-vat-.*\.json)$">
 <IfModule mod_expires.c>
 ExpiresActive Off
 </IfModule>
