@@ -5,6 +5,7 @@ import { hasVietnameseRelease, PATHS, platformHeading, platformPath, platformRel
 import { truncateWords } from '../lib/text.js';
 import { formatTime, weekdayOf } from '../lib/time.js';
 import { airingOf, englishName, languageKind } from './shows.js';
+import { personPath, showCredits } from './people.js';
 
 const MAX_DESCRIPTION = 155;
 const withBrand = (title) => `${title} | ${SITE_NAME}`;
@@ -64,6 +65,29 @@ export const aboutSeo = () => ({
   }],
 });
 
+/** Người có ít phim là trang mỏng: hiện cho người xem nhưng chưa đưa lên Google. */
+const MIN_INDEXED_WORKS = 3;
+
+export function personSeo(person, shows) {
+  const role = { studio: 'Studio lồng tiếng', 'dien-vien': 'Diễn viên lồng tiếng' }[person.role] ?? 'Dịch giả';
+  return {
+    title: withBrand(`${person.name}: ${role.toLowerCase()} anime bản quyền`),
+    description: truncateWords(
+      `${role} ${person.name}${person.group ? ` (${person.group})` : ''} đã tham gia ${shows.length} anime bản quyền tại Việt Nam. Xem danh sách phim, giờ chiếu và nơi xem.`,
+      MAX_DESCRIPTION,
+    ),
+    path: `/nhan-su/${person.id}`,
+    noindex: shows.length < MIN_INDEXED_WORKS,
+    jsonLd: [{
+      '@context': 'https://schema.org',
+      '@type': person.role === 'studio' ? 'Organization' : 'Person',
+      name: person.name,
+      url: absolute(`/nhan-su/${person.id}`),
+      ...(person.link ? { sameAs: [person.link] } : {}),
+    }, ...itemListJsonLd(`Anime của ${person.name}`, shows)],
+  };
+}
+
 /** Danh sách trang phim cho công cụ tìm kiếm hiểu quan hệ giữa trang danh sách và trang phim. */
 const itemListJsonLd = (name, shows) => [{
   '@context': 'https://schema.org',
@@ -122,7 +146,8 @@ export function showFacts(show, season, now) {
   return facts.join(' ');
 }
 
-function showJsonLd(show, season, path) {
+function showJsonLd(show, season, path, people) {
+  const { translator } = showCredits(show, people);
   const isMovie = show.format === 'Movie';
   const breadcrumb = [
     { name: 'Lịch chiếu', path: PATHS.home },
@@ -142,6 +167,7 @@ function showJsonLd(show, season, path) {
       ...(isMovie || show.episodesUnknown ? {} : { numberOfEpisodes: show.episodes }),
       [isMovie ? 'datePublished' : 'startDate']: show.firstAiredAt.slice(0, 10),
       sameAs: [show.malUrl, show.websiteUrl].filter(Boolean),
+      ...(translator ? { translator: { '@type': 'Person', name: translator.name, url: absolute(personPath(translator.id)) } } : {}),
     },
     {
       '@context': 'https://schema.org',
@@ -153,7 +179,7 @@ function showJsonLd(show, season, path) {
   ];
 }
 
-export function showSeo(show, season, now = Date.now()) {
+export function showSeo(show, season, now = Date.now(), people = new Map()) {
   const path = showPath(show.id, show.title);
   return {
     title: withBrand(`${show.title} ${vietnameseLabel(show)}: lịch chiếu và nơi xem`),
@@ -162,6 +188,6 @@ export function showSeo(show, season, now = Date.now()) {
     image: show.poster,
     type: 'video.tv_show',
     noindex: !hasVietnameseRelease(show.filterLanguages, show.nsfw),
-    jsonLd: showJsonLd(show, season, path),
+    jsonLd: showJsonLd(show, season, path, people),
   };
 }
