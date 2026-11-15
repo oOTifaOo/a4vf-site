@@ -24,7 +24,10 @@ export function mountPerson(root, { catalog }, person) {
   const now = Date.now();
   mount(root, html`
     <header class="person-head">
-      <span class="person-head__avatar" aria-hidden="true">${icon({ studio: 'mic', 'dien-vien': 'record_voice_over' }[person.role] ?? 'subtitles')}</span>
+      <span class="person-head__avatar" aria-hidden="true">
+        ${icon({ studio: 'mic', 'dien-vien': 'record_voice_over' }[person.role] ?? 'subtitles')}
+        ${person.image ? html`<img src="${person.image}" alt="" data-remove-on-error>` : ''}
+      </span>
       <div>
         <h1 class="page-title" tabindex="-1">${person.name}</h1>
         <ul class="chip-list">
