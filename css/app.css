@@ -1733,6 +1733,19 @@ main.container:has(.season-grid) {
   color: var(--accent-text);
 }
 
+.person-head__avatar {
+  position: relative;
+  overflow: hidden;
+}
+
+.person-head__avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .person-head__avatar .material-symbols-rounded,
 .person-head__avatar .icon {
   font-size: 2rem;
