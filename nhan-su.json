@@ -1,3 +1,11 @@
 [
-
+{"id":"ace-media","name":"ACE MEDIA","role":"studio","shown":true,"w":[20,1482,6149,16498,20923,21518,21700,99088,99255,101280,108511,109963,114043,114099,116742,120377,126288,127399,128547,136934,139589,140960,142838,146984,147103,154587,154999,155015,156822,158871,158927,162147,171018,177937,182205,182255,185660]},
+{"id":"lippik-shop-studio","name":"LipPik Shop Studio","role":"studio","shown":true,"w":[8525,10080,16706,20031,105333,113936,131518,137822,138882,140457,145260,150672,156896]},
+{"id":"song-ngu-media","name":"Song Ngư Media","role":"studio","shown":true,"w":[149883,155527]},
+{"id":"pink-sound-production","name":"Pink Sound Production","role":"studio","shown":true,"w":[21236,98289,101115,108853,116786,130253,165159]},
+{"id":"kantana-post-production-vietnam","name":"Kantana Post Production Vietnam","role":"studio","shown":true,"w":[97888,124195]},
+{"id":"dat-phi-media","name":"Đạt Phi Media","role":"studio","shown":true,"w":[150653,170206]},
+{"id":"hiventy-vietnam","name":"Hiventy Vietnam","role":"studio","shown":true,"w":[133965]},
+{"id":"tvm-corp","name":"TVM Corp","role":"studio","shown":true,"w":[]},
+{"id":"tifa","name":"Tifa","role":"dich-gia","group":"A4V","image":"https://a4vf.net/images/nhan-su/tifa.jpg","shown":true,"w":[21355,108632,163134,189046]}
 ]
