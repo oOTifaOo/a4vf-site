@@ -3,10 +3,11 @@
 import { emptyState } from './components/common.js';
 import { notFoundPage } from './components/not-found.js';
 import { PLATFORM_PAGES } from './config.js';
-import { loadArchivedShow, loadSeasonIfArchived, loadSynopsis } from './domain/archive.js';
+import { loadArchivedIds, loadArchivedShow, loadSeasonIfArchived, loadSynopsis } from './domain/archive.js';
 import { defaultSeason, loadCatalog } from './domain/catalog.js';
 import { isFollowing } from './domain/follow.js';
-import { aboutSeo, homeSeo, mineSeo, notFoundSeo, platformSeo, searchSeo, seasonSeo, showSeo, tierListSeo } from './domain/seo.js';
+import { worksOf } from './domain/people.js';
+import { aboutSeo, homeSeo, mineSeo, notFoundSeo, personSeo, platformSeo, searchSeo, seasonSeo, showSeo, tierListSeo } from './domain/seo.js';
 import { html, mount } from './lib/html.js';
 import { hasVietnameseRelease, legacyHashPath, PATHS, seasonKeyFromSlug, showPath } from './lib/paths.js';
 import { initAnalytics, trackPageView } from './ui/analytics.js';
@@ -21,6 +22,7 @@ import { clearTooltips, initTooltips } from './ui/tooltips.js';
 import { mountAbout } from './views/about.js';
 import { mountDetail } from './views/detail.js';
 import { mountHome } from './views/home.js';
+import { mountPerson } from './views/person.js';
 import { mountPlatform, platformShows } from './views/platform.js';
 import { mountSearch } from './views/search.js';
 import { mountTierList } from './views/tier-list.js';
@@ -81,11 +83,32 @@ function renderShow(id) {
   return mountDetail(outlet, { catalog, showId: id, backPath });
 }
 
+/** Phim mùa cũ của một dịch giả hoặc studio nằm ngoài data.js: tải các mùa đó trước khi dựng trang. */
+const personWorks = new Map();
+
+function personReady(id) {
+  const person = catalog.people.get(id);
+  if (!person) return true;
+  if (!personWorks.has(id)) {
+    const known = new Set(catalog.shows.map((show) => show.id));
+    if (person.works.every((showId) => known.has(showId))) {
+      personWorks.set(id, 'done');
+    } else {
+      personWorks.set(id, 'loading');
+      loadArchivedIds(catalog, person.works).finally(() => {
+        personWorks.set(id, 'done');
+        route();
+      });
+    }
+  }
+  return personWorks.get(id) === 'done';
+}
+
 function showPageSeo(id) {
   const show = catalog.shows.find((item) => item.id === id);
   if (show?.synopsisPending) return null;
   if (!show) return archiveChecked.has(id) ? notFoundSeo(location.pathname) : null;
-  return showSeo(show, catalog.seasons.find((season) => season.key === show.season));
+  return showSeo(show, catalog.seasons.find((season) => season.key === show.season), Date.now(), catalog.people);
 }
 
 /** Thêm trang: thêm một dòng ở đây, một file trong js/views, một link trong index.html và một đường dẫn trong js/lib/paths.js. */
@@ -98,6 +121,21 @@ const ROUTES = [
       return platform ? platformSeo(platform, platformShows(catalog, platform)) : notFoundSeo(location.pathname);
     },
     render: ([, slug]) => (platformOf(slug) ? mountPlatform(outlet, context(), platformOf(slug)) : mountNotFound()),
+  },
+  {
+    pattern: /^\/nhan-su\/([a-z0-9-]+)$/,
+    nav: null,
+    seo: ([, id]) => {
+      const person = catalog.people.get(id);
+      if (!person) return notFoundSeo(location.pathname);
+      if (!personReady(id)) return null;
+      const { translated, dubbed } = worksOf(person, catalog.shows);
+      return personSeo(person, [...new Set([...translated, ...dubbed])]);
+    },
+    render: ([, id]) => {
+      if (!catalog.people.has(id)) return mountNotFound();
+      return personReady(id) ? mountPerson(outlet, context(), catalog.people.get(id)) : null;
+    },
   },
   {
     pattern: /^\/gioi-thieu$/,
