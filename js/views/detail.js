@@ -10,6 +10,8 @@ import {
 import { addLatestEpisodes } from '../domain/latest-episodes.js';
 import { clearProgress, progressOf, recordEpisode, setProgress } from '../domain/progress.js';
 import { airingOf, englishName, episodeNumber, languageKind } from '../domain/shows.js';
+import { loadCast } from '../domain/archive.js';
+import { personPath, showCredits, vietnameseVoices } from '../domain/people.js';
 import { showFacts } from '../domain/seo.js';
 import { html, mount } from '../lib/html.js';
 import { hasVietnameseRelease, PATHS, seasonPath, showPath } from '../lib/paths.js';
@@ -233,6 +235,8 @@ function progressPicker(platform, airing, watched) {
     </div>`;
 }
 
+const personLinks = (list) => list.map((person, index) => html`${index ? ', ' : ''}<a href="${personPath(person.id)}">${person.name}</a>`);
+
 function watchSection(show, platform, airing, { groups, group, selected, watched }) {
   const episodes = Array.from({ length: show.episodes }, (_, i) => i + 1);
   const playable = startingEpisode(platform, airing, watched);
@@ -299,12 +303,115 @@ const fact = (iconName, label, value) => html`
     <dd>${value}</dd>
   </div>`;
 
-function overview(show, season) {
+const initials = (name) => name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+
+/** Ảnh tròn; chưa có ảnh hoặc ảnh lỗi thì hiện chữ cái đầu. */
+const avatar = (name, image) => html`
+  <span class="cast-avatar" aria-hidden="true">
+    <span class="cast-avatar__initials">${initials(name)}</span>
+    ${image ? html`<img src="${image}" alt="" loading="lazy" data-remove-on-error>` : ''}
+  </span>`;
+
+function castCard(character, voices, lang) {
+  const voiceBlock = lang === 'ja'
+    ? (character.voice ? html`
+        <div class="cast-card__voice">
+          <span class="cast-card__name">${character.voice.name}</span>
+          <span class="cast-card__note" lang="ja">${character.voice.nativeName}</span>
+        </div>
+        ${avatar(character.voice.name, character.voice.image)}` : html`<span class="cast-card__note">Chưa có thông tin</span>`)
+    : (voices.length ? html`
+        <div class="cast-card__voice">
+          <span class="cast-card__name">${personLinks(voices)}</span>
+          <span class="cast-card__note">Lồng tiếng Việt</span>
+        </div>
+        ${avatar(voices[0].name, voices[0].image)}` : html`<span class="cast-card__note">Chưa có thông tin</span>`);
+  return html`
+    <li class="cast-card">
+      ${avatar(character.name, character.image)}
+      <div class="cast-card__character">
+        <span class="cast-card__name">${character.name}</span>
+        <span class="cast-card__note">${character.isMain ? 'Vai chính' : 'Vai phụ'}</span>
+      </div>
+      ${voiceBlock}
+    </li>`;
+}
+
+/** Nền tảng (kèm loại bản dịch) mà người này được ghi công, để biết họ dịch hay lồng tiếng bản nào. */
+function creditedPlatforms(show, person, key) {
+  return [...show.platforms, ...show.otherPlatforms]
+    .filter((platform) => platform.credits[key].includes(person.id))
+    .map((platform) => `${platform.name} · ${platform.language}`);
+}
+
+/** Thẻ người: ảnh đại diện, tên và một dòng ghi chú; bấm vào sang trang riêng. */
+const personCard = (person, note) => html`
+  <li>
+    <a class="person-card" href="${personPath(person.id)}">
+      ${avatar(person.name, person.image)}
+      <span class="person-card__body">
+        <span class="cast-card__name">${person.name}</span>
+        <span class="cast-card__note">${note}</span>
+      </span>
+    </a>
+  </li>`;
+
+/** Có nhân vật từ AniList, dịch giả hoặc thông tin lồng tiếng Việt thì mới có tab Thông tin chi tiết. */
+function castInfo(show, people) {
+  const voices = vietnameseVoices(show, people);
+  const credits = showCredits(show, people);
+  const hasVietnameseDub = voices.size > 0 || credits.dubbers.length > 0;
+  return {
+    voices, credits, hasVietnameseDub,
+    available: show.hasCast || Boolean(credits.translator) || hasVietnameseDub,
+  };
+}
+
+/** Dịch giả luôn hiện ở đầu; phần lồng tiếng mặc định tiếng Nhật, có tiếng Việt khi phim có bản lồng tiếng Việt. */
+function castPanel(show, info, lang) {
+  const { voices, credits, hasVietnameseDub } = info;
+  const hasVoices = show.hasCast || hasVietnameseDub;
+  const active = lang === 'vi' && hasVietnameseDub ? 'vi' : (show.hasCast ? 'ja' : 'vi');
+  const tabs = [
+    ...(show.hasCast ? [{ key: 'ja', label: 'Tiếng Nhật' }] : []),
+    ...(hasVietnameseDub ? [{ key: 'vi', label: 'Tiếng Việt' }] : []),
+  ];
+  // Tiếng Việt: nhân vật đã có diễn viên Việt lên trước.
+  const characters = active === 'vi'
+    ? [...show.cast].sort((a, b) => Number(voices.has(b.id)) - Number(voices.has(a.id)))
+    : show.cast;
+  return html`
+    ${credits.translator ? html`
+      <h3 class="detail-subheading">${icon('subtitles')}Dịch giả</h3>
+      <ul class="person-grid list-unstyled">
+        ${personCard(credits.translator, creditedPlatforms(show, credits.translator, 'translators')
+          .filter((name) => !/lồng/i.test(name)).join(', '))}
+      </ul>` : ''}
+    ${hasVoices ? html`
+      <h3 class="detail-subheading">${icon('record_voice_over')}Lồng tiếng</h3>
+      ${tabs.length > 1 ? html`
+        <div class="platform-tabs cast-lang" role="group" aria-label="Ngôn ngữ lồng tiếng">
+          ${tabs.map((tab) => html`
+            <button class="btn btn-sm platform-tab" type="button" data-cast-lang="${tab.key}" aria-pressed="${tab.key === active}">${tab.label}</button>`)}
+        </div>` : ''}
+      ${active === 'vi' ? html`
+        ${credits.dubbers.length ? html`
+          <ul class="person-grid list-unstyled">
+            ${credits.dubbers.map((person) => personCard(person, `Studio lồng tiếng · ${creditedPlatforms(show, person, 'dubbers').map((name) => name.split(' · ')[0]).join(', ')}`))}
+          </ul>` : ''}
+        ${voices.size ? '' : html`<p class="cast-empty">${icon('info')}Chưa có danh sách diễn viên lồng tiếng Việt cho phim này.</p>`}` : ''}
+      ${show.castPending && (active === 'ja' || voices.size) ? html`<p class="cast-empty" role="status">${icon('hourglass_top')}Đang tải danh sách nhân vật…</p>` : ''}
+      ${!show.castPending && (active === 'ja' || voices.size) ? html`
+        <ul class="cast-grid list-unstyled">
+          ${characters.map((character) => castCard(character, voices.get(character.id) ?? [], active))}
+        </ul>
+        ${active === 'ja' ? html`<p class="cast-source">Nguồn nhân vật và diễn viên lồng tiếng Nhật: AniList.</p>` : ''}` : ''}` : ''}`;
+}
+
+function overviewFacts(show, season) {
   const platformNames = [...new Set(show.platforms.map((platform) => platform.name))].join(', ');
   const english = englishName(show);
   return html`
-    <section aria-labelledby="overview-title">
-      <header class="section-header"><h2 id="overview-title">${icon('info')}Tổng quan</h2></header>
       <dl class="fact-list">
         ${english ? fact('language', 'Tên tiếng Anh', english) : ''}
         ${fact('translate', 'Tên Romaji', show.altTitle)}
@@ -317,7 +424,33 @@ function overview(show, season) {
         ${show.languages.map(languageChip)}
         ${chip(show.format)}
         ${show.genres.map(chip)}
-      </ul>
+      </ul>`;
+}
+
+/** Tổng quan mở sẵn; tab lồng tiếng chỉ dựng khi người xem bấm vào, để không chiếm chỗ của phần xem phim. */
+function infoSection(show, season, people, { panel, castLang }) {
+  const info = castInfo(show, people);
+  if (!info.available) {
+    return html`
+      <section aria-labelledby="overview-title">
+        <header class="section-header"><h2 id="overview-title">${icon('info')}Tổng quan</h2></header>
+        ${overviewFacts(show, season)}
+      </section>`;
+  }
+  const active = panel === 'cast' ? 'cast' : 'overview';
+  const tabs = [
+    { key: 'overview', icon: 'info', label: 'Tổng quan' },
+    { key: 'cast', icon: 'badge', label: 'Thông tin chi tiết' },
+  ];
+  return html`
+    <section aria-labelledby="info-title">
+      <h2 class="visually-hidden" id="info-title">Thông tin phim</h2>
+      <div class="subtitle-tabs info-tabs" role="group" aria-labelledby="info-title">
+        ${tabs.map((tab) => html`
+          <button class="subtitle-tab" type="button" data-info-tab="${tab.key}" aria-pressed="${tab.key === active}"
+            aria-controls="info-panel">${icon(tab.icon)}${tab.label}</button>`)}
+      </div>
+      <div id="info-panel">${active === 'cast' ? castPanel(show, info, castLang) : overviewFacts(show, season)}</div>
     </section>`;
 }
 
@@ -359,11 +492,14 @@ export function mountDetail(root, { catalog, showId, backPath }) {
   }
 
   const season = catalog.seasons.find((item) => item.key === show.season);
+  const people = catalog.people ?? new Map();
   const groups = subtitleGroups(show);
   const saved = progressOf(show.id);
   const savedGroup = groups.findIndex(({ kind }) => kind === saved?.group);
   let group = Math.max(savedGroup, 0);
   let selected = savedGroup < 0 ? 0 : Math.max(groups[group].platforms.findIndex(({ name }) => name === saved.platform), 0);
+  let castLang = 'ja';
+  let infoPanel = 'overview';
 
   const currentPlatform = () => groups[group].platforms[selected];
   const watchedEpisode = () => progressOf(show.id)?.episode ?? 0;
@@ -424,7 +560,7 @@ export function mountDetail(root, { catalog, showId, backPath }) {
           : watchSection(show, platform, airing, { groups, group, selected, watched: watchedEpisode() })}
         ${seriesSection(show)}
         ${trailerSection(show)}
-        ${overview(show, season)}
+        <div id="info">${infoSection(show, season, people, { panel: infoPanel, castLang })}</div>
         ${season ? relatedShows(show, season, catalog.shows) : ''}
       </article>`);
 
@@ -463,6 +599,20 @@ export function mountDetail(root, { catalog, showId, backPath }) {
       const opened = event.target.closest('[data-watch-episode]');
       if (opened) {
         markEpisode(Number(opened.dataset.watchEpisode));
+        return;
+      }
+      // Đổi tab ngôn ngữ chỉ vẽ lại phần nhân vật, video đang phát không bị dừng.
+      const infoTab = event.target.closest('[data-info-tab]');
+      const castTab = event.target.closest('[data-cast-lang]');
+      if (infoTab || castTab) {
+        if (infoTab) infoPanel = infoTab.dataset.infoTab;
+        if (castTab) castLang = castTab.dataset.castLang;
+        const paintInfo = () => mount(root.querySelector('#info'), infoSection(show, season, people, { panel: infoPanel, castLang }));
+        paintInfo();
+        root.querySelector(infoTab ? `[data-info-tab="${infoPanel}"]` : `[data-cast-lang="${castLang}"]`)?.focus();
+        if (infoPanel === 'cast' && show.castPending) {
+          loadCast(show).then(() => { if (root.querySelector('#info-panel')) paintInfo(); });
+        }
         return;
       }
       const trailer = event.target.closest('[data-trailer]');
