@@ -1550,6 +1550,194 @@ main.container:has(.season-grid) {
   min-width: 0;
 }
 
+/* ---------- Thông tin chi tiết: dịch giả, lồng tiếng ---------- */
+
+.detail-subheading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0.6rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.person-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.person-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  height: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.person-card:hover,
+.person-card:focus-visible {
+  border-color: var(--accent);
+}
+
+.person-card__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Nhân vật & lồng tiếng */
+
+.cast-lang {
+  margin-bottom: 0.75rem;
+}
+
+.crew-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.crew-list dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: 0.35rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.crew-list div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.crew-list dd {
+  margin: 0;
+}
+
+.crew-list dd a,
+.cast-card__name a {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.cast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.cast-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+
+.cast-card__character,
+.cast-card__voice {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cast-card__voice {
+  text-align: right;
+}
+
+.cast-card > .cast-card__note {
+  grid-column: 3 / 5;
+  text-align: right;
+}
+
+.cast-card__name {
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.cast-card__note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.cast-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.cast-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cast-empty,
+.cast-source {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.person-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.person-head .page-title {
+  margin-bottom: 0.4rem;
+}
+
+.person-head .chip-list {
+  margin: 0;
+}
+
+.person-head__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.person-head__avatar .material-symbols-rounded,
+.person-head__avatar .icon {
+  font-size: 2rem;
+}
+
 /* ---------- Shared states ---------- */
 
 .empty-state {
@@ -3091,4 +3279,21 @@ a.tier-item {
 
 @media (prefers-reduced-motion: reduce) {
   .about-hero__mascot { animation: none; }
+}
+
+/* Tab Tổng quan / Lồng tiếng: không xuống dòng, màn hình hẹp thì thu khoảng cách. */
+.info-tabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.info-tabs .subtitle-tab {
+  flex: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .info-tabs .subtitle-tab {
+    padding: 0 0.6rem;
+  }
 }
