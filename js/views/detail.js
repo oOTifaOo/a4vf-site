@@ -408,7 +408,7 @@ function castPanel(show, info, lang) {
         ${active === 'ja' ? html`<p class="cast-source">Nguồn nhân vật và diễn viên lồng tiếng Nhật: AniList.</p>` : ''}` : ''}` : ''}`;
 }
 
-function overviewFacts(show, season) {
+function overviewFacts(show, season, translator = null) {
   const platformNames = [...new Set(show.platforms.map((platform) => platform.name))].join(', ');
   const english = englishName(show);
   return html`
@@ -418,6 +418,7 @@ function overviewFacts(show, season) {
         ${fact('format_list_numbered', 'Số tập', show.episodes)}
         ${fact('date_range', 'Mùa chiếu', season ? html`<a href="${seasonPath(season.key)}">${season.name}</a>` : '')}
         ${fact('verified', 'Bản quyền', platformNames)}
+        ${translator ? fact('subtitles', 'Dịch giả', html`<a href="${personPath(translator.id)}">${translator.name}</a>`) : ''}
         ${fact('local_fire_department', 'Độ phổ biến', show.popularity.toLocaleString('vi-VN'))}
       </dl>
       <ul class="chip-list">
@@ -434,7 +435,7 @@ function infoSection(show, season, people, { panel, castLang }) {
     return html`
       <section aria-labelledby="overview-title">
         <header class="section-header"><h2 id="overview-title">${icon('info')}Tổng quan</h2></header>
-        ${overviewFacts(show, season)}
+        ${overviewFacts(show, season, info.credits.translator)}
       </section>`;
   }
   const active = panel === 'cast' ? 'cast' : 'overview';
@@ -450,7 +451,7 @@ function infoSection(show, season, people, { panel, castLang }) {
           <button class="subtitle-tab" type="button" data-info-tab="${tab.key}" aria-pressed="${tab.key === active}"
             aria-controls="info-panel">${icon(tab.icon)}${tab.label}</button>`)}
       </div>
-      <div id="info-panel">${active === 'cast' ? castPanel(show, info, castLang) : overviewFacts(show, season)}</div>
+      <div id="info-panel">${active === 'cast' ? castPanel(show, info, castLang) : overviewFacts(show, season, info.credits.translator)}</div>
     </section>`;
 }
 
