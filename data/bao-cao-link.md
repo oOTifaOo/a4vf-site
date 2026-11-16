@@ -1,19 +1,27 @@
 # Báo cáo kiểm tra link
 
-Chạy lúc 2026-11-09 09:40 giờ Việt Nam. Đã kiểm tra 578 playlist YouTube và 619 trang FPT Play, Bilibili TV.
+Chạy lúc 2026-11-16 09:44 giờ Việt Nam. Đã kiểm tra 588 playlist YouTube và 619 trang FPT Play, Bilibili TV.
 
-- Link hỏng: 0
+- Link hỏng: 3
 - Thiếu link tập mới: 1
 - Có thể gắn nhầm phim: 2
-- Một playlist gắn nhiều phim: 6
+- Một playlist gắn nhiều phim: 7
 - Chưa có link: 0
-- Không kiểm tra được: 377
+- Không kiểm tra được: 374
+
+## Link hỏng
+
+Sửa cột link_xem hoặc đánh dấu het_ban_quyen trong Datasheet.
+
+- OSHI NO KO - Đứa Con Của Thần Tượng (Ani-one Việt Nam, id 150672): YouTube báo playlist không còn hoặc đã riêng tư. https://www.youtube.com/playlist?list=PLazH8Ye77hfI
+- Thánh Hiệp Sĩ Nơi Tận Cùng Thế Giới (FPT Play, id 132473): FPT Play không còn trang phim này. https://fptplay.vn/xem-video/thanh-hiep-si-noi-tan-cung-the-gioi-67173d370c08400ca21a870b
+- Kubo Won't Let Me Be Invisible (FPT Play, id 148969): FPT Play không còn trang phim này. https://fptplay.vn/xem-video/kubo-khong-de-toi-het-cuu-67371905fbfcd097de3add97
 
 ## Thiếu link tập mới
 
 Tập đã chiếu hơn 2 ngày mà chưa có link riêng. Người xem vẫn được mở playlist.
 
-- Pokémon: Chân Trời Mới (POPS, id 158871): tập 155, 156, chưa đọc được danh sách video. https://www.youtube.com/playlist?list=PLHnMhWQQpOSs
+- Pokémon: Chân Trời Mới (POPS, id 158871): tập 156, 157, chưa đọc được danh sách video. https://www.youtube.com/playlist?list=PLHnMhWQQpOSs
 
 ## Có thể gắn nhầm phim
 
@@ -26,6 +34,7 @@ Tên playlist và video không có từ nào chung với tên phim. Chỉ là ng
 
 Có thể đúng nếu kênh gộp nhiều mùa, nhưng nên xem lại.
 
+- Thế Giới Chỉ Có Thánh Thần Biết; Thế Giới Chỉ Có Thánh Thần Biết Mùa 2; Thế Giới Chỉ Có Thánh Thần Biết: Nữ Thần. https://www.youtube.com/playlist?list=PLLX0FZCGnLJTT6tBYRtGNZxYSvcRdd_AR
 - Lúc Đó Tôi Đã Chuyển Sinh Thành Slime (Mùa 2); Lúc đó tôi đã chuyển sinh thành Slime Mùa 2 Phần 2. https://www.youtube.com/playlist?list=PLV9zFeZ9x_-A
 - SPY×FAMILY Phần 2; SPY×FAMILY S2. https://www.youtube.com/playlist?list=PLGX149EKEzTg
 - Chuyển Sinh Thành Quý Tộc, Tôi Sử Dụng Kỹ Năng Giám Định Để Tiến Thân Trong Thế Giới; Chuyển Sinh Thành Quý Tộc Mùa 3. https://www.youtube.com/playlist?list=PLOVZwvNm10lXFord6t_5wqdynEl4LchUo
@@ -37,7 +46,7 @@ Có thể đúng nếu kênh gộp nhiều mùa, nhưng nên xem lại.
 
 Không tính là hỏng. Thường do mạng hoặc nền tảng chặn máy kiểm tra.
 
-- Bilibili TV: HTTP 412, mã null: 377 link
+- Bilibili TV: HTTP 412, mã null: 374 link
 
 ## Độ tin cậy theo nền tảng
 
