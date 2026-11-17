@@ -23,13 +23,14 @@ function todayBadge(time, now) {
     data-countdown-to="${time}">${formatCountdown(time - now)}</time>`;
 }
 
-function todayCard({ show, time, episode }, now) {
+/** `eager`: vài thẻ đầu nằm ngay màn hình đầu tiên nên tải ảnh ngay, không đợi cuộn. */
+function todayCard({ show, time, episode }, now, eager = false) {
   const platform = show.platforms[0];
   return html`
     <li class="poster-card">
       ${followButton(show)}
       <span class="poster-card__cover">
-        ${poster(show, 'poster--fill')}
+        ${poster(show, 'poster--fill', { eager })}
         ${todayBadge(time, now)}
       </span>
       <a class="poster-card__title stretched-link" href="${showPath(show.id, show.title)}" title="${show.title}">${show.title}</a>
@@ -151,7 +152,7 @@ export function mountHome(root, { catalog, state }) {
     }
     todayNote.textContent = formatDayLabel(shownDay);
     mount(todayList, episodes.length
-      ? html`<ul class="episode-strip list-unstyled">${episodes.map((entry) => todayCard(entry, time))}</ul>`
+      ? html`<ul class="episode-strip list-unstyled">${episodes.map((entry, index) => todayCard(entry, time, index < 3))}</ul>`
       : emptyState('event_busy', 'Hôm nay chưa có phim nào lên sóng.'));
     mount(weekTabs, dayTabs(selectedDay, today));
     mount(weekList, html`${WEEK_ORDER.map((day) => weekColumn(day, entries, { selectedDay, today }))}`);
