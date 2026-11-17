@@ -146,6 +146,66 @@ function setHead(template, seo) {
   return html;
 }
 
+/**
+ * Font icon Material Symbols đầy đủ nặng hơn 500 KB. Google Fonts cho tải riêng các icon cần (icon_names),
+ * nên lấy mọi chuỗi trong js/ và index.html trùng tên một icon. Thừa vài tên không sao; thiếu thì icon hiện thành chữ.
+ * Không tải được danh sách tên icon thì giữ font đầy đủ.
+ */
+const ICON_NAMES_URL = "https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/MaterialSymbolsRounded%5BFILL,GRAD,opsz,wght%5D.codepoints";
+
+async function sourceFiles(dir) {
+  const entries = await readdir(join(root, dir), { withFileTypes: true });
+  const nested = await Promise.all(entries.map((entry) => (entry.isDirectory()
+    ? sourceFiles(join(dir, entry.name))
+    : entry.name.endsWith(".js") ? [join(dir, entry.name)] : [])));
+  return nested.flat();
+}
+
+async function subsetIconFont(template) {
+  const link = /https:\/\/fonts\.googleapis\.com\/css2\?family=Material\+Symbols\+Rounded:[^"&]+(&amp;|&)display=block/;
+  const match = template.match(link);
+  if (!match) return template;
+  try {
+    const response = await fetch(ICON_NAMES_URL, { signal: AbortSignal.timeout(20000) });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const known = new Set((await response.text()).split("\n").map((line) => line.split(" ")[0]).filter(Boolean));
+    if (known.size < 1000) throw new Error("danh sách icon quá ngắn");
+    const used = new Set();
+    for (const file of [...await sourceFiles("js"), "index.html"]) {
+      const text = await readFile(join(root, file), "utf8");
+      for (const [, name] of text.matchAll(/["'`]([a-z][a-z0-9_]{1,40})["'`]/g)) if (known.has(name)) used.add(name);
+    }
+    const url = match[0].replace(/(&amp;|&)display=block$/, `$1icon_names=${[...used].sort().join(",")}$1display=block`);
+    console.log(`Font icon: chỉ tải ${used.size} icon.`);
+    return template.replace(match[0], url);
+  } catch (error) {
+    console.warn(`Không lấy được danh sách icon (${error.message}), dùng font icon đầy đủ.`);
+    return template;
+  }
+}
+
+/** /phim/<id> (thiếu phần tên) trước đây trả 404. Mỗi phim có thêm một trang nhỏ chuyển sang đường dẫn đầy đủ. */
+async function writeShortLinks(shows) {
+  let count = 0;
+  for (const show of shows) {
+    const target = showPath(show.id, show.title);
+    const short = `/phim/${show.id}`;
+    if (target === short) continue;
+    const url = `${SITE_URL}${target}`;
+    await writeFile(join(dist, `${short.slice(1)}.html`), `<!doctype html>
+<html lang="vi"><head><meta charset="utf-8">
+<title>${escapeAttr(show.title)}</title>
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="${escapeAttr(url)}">
+<meta http-equiv="refresh" content="0; url=${escapeAttr(target)}">
+<script>location.replace(${JSON.stringify(target)} + location.search + location.hash);</script>
+</head><body><p><a href="${escapeAttr(target)}">${escapeAttr(show.title)}</a></p></body></html>
+`);
+    count += 1;
+  }
+  return count;
+}
+
 const setMain = (template, content) => template.replace(/(<main[^>]*>)[\s\S]*?(<\/main>)/, (_, open, close) => `${open}${content}${close}`);
 
 function outputFile(path) {
@@ -206,8 +266,8 @@ async function main() {
   // css và js nằm trong thư mục riêng của từng phiên bản. Khi tải lên host, file mới không đè file cũ,
   // nên trang cũ vẫn chạy trọn vẹn và mỗi trang chỉ đổi sang phiên bản mới khi HTML của nó được thay.
   const assets = `v/${version}`;
-  const template = (await readFile(join(root, "index.html"), "utf8"))
-    .replace(/"\/(css|js)\/(tokens\.css|app\.css|app\.js)\?v=[^"]+"/g, `"/${assets}/$1/$2"`);
+  const template = await subsetIconFont((await readFile(join(root, "index.html"), "utf8"))
+    .replace(/"\/(css|js)\/(tokens\.css|app\.css|app\.js)\?v=[^"]+"/g, `"/${assets}/$1/$2"`));
 
   await Promise.all(["logos", "images"].map((dir) => cp(join(root, dir), join(dist, dir), { recursive: true })));
   await Promise.all(["css", "js"].map((dir) => cp(join(root, dir), join(dist, assets, dir), { recursive: true })));
@@ -243,6 +303,8 @@ async function main() {
     await mkdir(dirname(file), { recursive: true });
     await writeFile(file, setMain(head, seo.main));
   }
+  const shortLinks = await writeShortLinks(catalog.shows);
+  console.log(`Link rút gọn /phim/<id>: ${shortLinks} trang chuyển hướng.`);
   await writeManifest();
   console.log(`Đã dựng ${pages.length} trang, trong đó ${catalog.shows.filter(isIndexable).length} trang phim đưa vào sitemap.`);
 }
