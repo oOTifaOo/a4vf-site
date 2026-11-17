@@ -3,7 +3,7 @@
 set -u
 
 run_one() {
-  lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST" -e "set cmd:fail-exit true; set ssl:verify-certificate no; set net:max-retries 4; set net:reconnect-interval-base 5; source $1; quit"
+  lftp -u "$FTP_USER,$FTP_PASS" "$FTP_HOST" -e "set cmd:fail-exit true; set ssl:verify-certificate no; set net:timeout 30; set net:max-retries 4; set net:reconnect-interval-base 5; set net:persist-retries 2; source $1; quit"
 }
 
 run_group() {
