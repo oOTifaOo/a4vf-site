@@ -792,9 +792,7 @@ main.container:has(.season-grid) {
 /* Thẻ hẹp nên logo và tag xếp hai hàng, mô tả 6 dòng. */
 @media (min-width: 576px) {
   .season-grid .show-card--synopsis .poster {
-    flex-basis: 9.5rem;
-    width: 9.5rem;
-    min-height: 13.5rem;
+    min-height: 18.9rem;
   }
 
   .season-grid .show-card__synopsis {
@@ -1990,10 +1988,12 @@ main.container:has(.season-grid) {
     width: 11.75rem;
   }
 
+  /* Từ máy tính bảng: poster đúng tỉ lệ 5:7 của ảnh bìa, cao bằng thẻ, chiều rộng tự tính theo chiều cao. */
   .show-card--synopsis .poster {
-    flex-basis: 12.5rem;
-    width: 12.5rem;
+    flex: 0 0 auto;
+    width: auto;
     min-height: 17.5rem;
+    aspect-ratio: 5 / 7;
   }
 
   .show-card__synopsis {
