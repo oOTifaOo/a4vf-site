@@ -3310,3 +3310,24 @@ a.tier-item {
     padding: 0 0.6rem;
   }
 }
+
+/* ---------- Màn hình rất rộng (21:9, 2K trở lên) ---------- */
+/* Khung nội dung nở theo màn hình thay vì dừng ở 1320px; Theo mùa và Tìm Anime dùng thẻ rộng hơn (ít cột hơn);
+   trang phim rộng hơn để video lớn hơn. Màn hình dưới 1800px giữ nguyên. */
+@media (min-width: 1800px) {
+  .container {
+    max-width: min(100% - 4rem, max(1320px, 72vw));
+  }
+
+  main.container:has(.season-grid) {
+    max-width: min(100% - 4rem, 3000px);
+  }
+
+  .season-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 32rem), 1fr));
+  }
+
+  .detail {
+    max-width: 75rem;
+  }
+}
