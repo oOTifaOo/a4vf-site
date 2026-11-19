@@ -158,16 +158,40 @@ async function addSeries(shows, sheet) {
       });
     }
   } catch (error) {
-    console.warn("Không lấy được quan hệ giữa các phần, bỏ qua lần này:", error.message);
+    // Lỗi mạng tạm thời không được làm mất liên kết các phần trên cả website: giữ danh sách của lần cập nhật trước.
+    const kept = await previousSeries();
+    for (const show of shows) if (kept.has(show.id)) show.sr = kept.get(show.id);
+    console.warn(`Không lấy được quan hệ giữa các phần (${error.message}), giữ liên kết cũ của ${kept.size} phim.`);
+  }
+}
+
+async function previousSeries() {
+  try {
+    const text = await readFile(new URL("../data.js", import.meta.url), "utf8");
+    const { SHOWS } = new Function(`${text};return { SHOWS };`)();
+    return new Map(SHOWS.filter((show) => show.sr).map((show) => [show.id, show.sr]));
+  } catch {
+    return new Map();
   }
 }
 
 async function gql(query, variables, retries = 2) {
-  const res = await fetch("https://graphql.anilist.co", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ query, variables }),
-  });
+  let res;
+  try {
+    res = await fetch("https://graphql.anilist.co", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ query, variables }),
+      signal: AbortSignal.timeout(30000),
+    });
+  } catch (error) {
+    // Mạng chập chờn ("fetch failed", hết thời gian chờ): đợi rồi thử lại thay vì bỏ cả bước.
+    if (retries > 0) {
+      await new Promise((r) => setTimeout(r, 15000));
+      return gql(query, variables, retries - 1);
+    }
+    throw error;
+  }
   if (res.status === 429 && retries > 0) {
     await new Promise((r) => setTimeout(r, 65000));
     return gql(query, variables, retries - 1);
