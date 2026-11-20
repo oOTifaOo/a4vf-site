@@ -44,6 +44,14 @@ function synopsisLine(show) {
   return html`<p class="show-card__synopsis">${show.synopsis}</p>`;
 }
 
+/** Phim không phải TV Series được đánh dấu ở góc poster; TV Series và TV Short không cần nhãn. */
+const FORMAT_BADGES = { Movie: 'movie', OVA: 'album', ONA: 'smart_display', Special: 'auto_awesome' };
+
+function formatBadge(show) {
+  const name = FORMAT_BADGES[show.format];
+  return name ? html`<span class="format-badge">${icon(name)}${show.format}</span>` : '';
+}
+
 /** Thẻ ngang: logo nền tảng một hàng riêng, phụ đề và thể loại tối đa hai hàng để các thẻ bằng nhau. */
 export function showCard(show, now, { showCountdown = false, synopsis = false } = {}) {
   const airing = airingOf(show, now);
@@ -52,6 +60,7 @@ export function showCard(show, now, { showCountdown = false, synopsis = false } 
       <article class="show-card ${synopsis ? 'show-card--synopsis' : ''}">
         ${followButton(show)}
         ${poster(show, '', { sharp: synopsis })}
+        ${formatBadge(show)}
         <div class="show-card__body">
           ${statusBadge(airing.status)}
           <h3 class="show-card__title"><a class="stretched-link" href="${showPath(show.id, show.title)}" title="${show.title}">${show.title}</a></h3>
