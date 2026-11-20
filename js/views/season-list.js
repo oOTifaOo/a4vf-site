@@ -103,13 +103,13 @@ export function mountSeasonList(root, { catalog, state }) {
 
   function refresh() {
     const now = Date.now();
-    const shows = selectSeasonShows(catalog.shows, filters, now);
+    const shows = selectSeasonShows(catalog.shows, filters, now, { carryover: true });
     loadMissingSynopses(shows);
     const parts = [`${shows.length} anime`, describeLanguage(filters.language), filters.free && 'Free', filters.mine && 'Phim của tôi'];
     count.textContent = parts.filter(Boolean).join(' · ');
 
     mount(grid, shows.length
-      ? html`${showGrid(shows, now, { showCountdown: filters.mine, synopsis: true })}`
+      ? html`${showGrid(shows, now, { showCountdown: filters.mine, synopsis: true, seasonKey: filters.seasonKey })}`
       : html`<li class="col-12">${emptyResult(filters)}</li>`);
   }
 
