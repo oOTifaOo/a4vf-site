@@ -134,25 +134,27 @@ export function allGenres(shows) {
     .sort((a, b) => a.localeCompare(b, 'vi'));
 }
 
-const firstAirTime = (show) => Date.parse(show.firstAiredAt);
-export const airWeekday = (show) => weekdayOf(firstAirTime(show));
-
-/** Phim hiện ở Lịch chiếu: đang chiếu, hoặc sắp chiếu trong vài ngày tới. Sắp theo giờ trong ngày. */
-export function selectWeekShows(shows, filters, now) {
-  // Tính từ đầu ngày phát sóng, để phim 24:30 đứng sau phim 23:00.
-  const clockOf = (show) => firstAirTime(show) - todayStart(firstAirTime(show));
-  const start = weekStart(now);
-  const airedThisWeek = ({ aired, timeOf }) => aired > 0 && timeOf(aired) >= start;
+/**
+ * Các tập chiếu từ `from` tới trước `to` (lịch theo ngày, có thể sang tuần sau).
+ * Mỗi phim chỉ xét các tập quanh tập vừa chiếu nên vẫn nhanh với phim dài tập.
+ */
+export function selectScheduleEpisodes(shows, filters, from, to, now) {
+  const weeksAhead = Math.ceil(Math.max(0, to - now) / WEEK_MS);
+  const weeksBack = Math.ceil(Math.max(0, now - from) / WEEK_MS);
   return shows
     .filter((show) => matchesFilters(show, filters))
-    .map((show) => ({ show, airing: airingOf(show, now) }))
-    .filter(({ airing }) =>
-      airing.status === 'air' ||
-      (airing.status === 'done' && airedThisWeek(airing)) ||
-      (airing.status === 'soon' && airing.first - now < UPCOMING_WINDOW_DAYS * DAY_MS))
-    // Lịch tuần ghi tập của tuần này: tập đã chiếu, hoặc tập sắp chiếu nếu chưa tới ngày.
-    .map(({ show, airing }) => ({ show, episode: airedThisWeek(airing) ? airing.aired : airing.aired + 1 }))
-    .sort((a, b) => clockOf(a.show) - clockOf(b.show));
+    .flatMap((show) => {
+      const airing = airingOf(show, now);
+      const first = Math.max(1, airing.aired - 3 * weeksBack - 3);
+      const last = Math.min(show.episodes, airing.aired + 3 * weeksAhead + 4);
+      const episodes = [];
+      for (let episode = first; episode <= last; episode += 1) {
+        const time = airing.timeOf(episode);
+        if (time >= from && time < to) episodes.push({ show, episode, time });
+      }
+      return episodes;
+    })
+    .sort((a, b) => a.time - b.time);
 }
 
 /** Số tập hiện cho người xem. Playlist đánh số nối tiếp mùa trước thì khớp với số trên YouTube. */
