@@ -3,6 +3,7 @@ import { isFollowing } from '../domain/follow.js';
 import { html } from '../lib/html.js';
 import { showPath } from '../lib/paths.js';
 import { formatEta, formatShortDateTime } from '../lib/time.js';
+import { SEASON_NAMES } from '../config.js';
 import { chip, followButton, icon, languageChip, poster, statusBadge } from './common.js';
 import { platformLogo, platformMarks } from './platform-logo.js';
 
@@ -52,8 +53,15 @@ function formatBadge(show) {
   return name ? html`<span class="format-badge">${icon(name)}${show.format}</span>` : '';
 }
 
+/** Trên trang Theo mùa: phim nối từ mùa trước ghi rõ mùa bắt đầu. */
+function carryoverNote(show, seasonKey) {
+  if (!seasonKey || show.season === seasonKey) return '';
+  const [family, year] = show.season.split('-');
+  return html`<span class="show-card__carryover">${icon('redo')}Tiếp từ Mùa ${SEASON_NAMES[family]} ${year}</span>`;
+}
+
 /** Thẻ ngang: logo nền tảng một hàng riêng, phụ đề và thể loại tối đa hai hàng để các thẻ bằng nhau. */
-export function showCard(show, now, { showCountdown = false, synopsis = false } = {}) {
+export function showCard(show, now, { showCountdown = false, synopsis = false, seasonKey = '' } = {}) {
   const airing = airingOf(show, now);
   return html`
     <li class="col">
@@ -62,7 +70,7 @@ export function showCard(show, now, { showCountdown = false, synopsis = false } 
         ${poster(show, '', { sharp: synopsis })}
         ${formatBadge(show)}
         <div class="show-card__body">
-          ${statusBadge(airing.status)}
+          <div class="show-card__status">${statusBadge(airing.status)}${carryoverNote(show, seasonKey)}</div>
           <h3 class="show-card__title"><a class="stretched-link" href="${showPath(show.id, show.title)}" title="${show.title}">${show.title}</a></h3>
           ${airingLine(show, airing)}
           ${showCountdown ? followCountdown(show, airing, now) : ''}
