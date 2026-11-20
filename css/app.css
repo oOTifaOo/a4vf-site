@@ -610,6 +610,27 @@ time,
   transition: border-color 0.15s;
 }
 
+/* Dòng trạng thái: "Đang chiếu" và (ở trang Theo mùa) ghi chú phim nối từ mùa trước. */
+.show-card__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.show-card__carryover {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.show-card__carryover .icon {
+  font-size: 1rem;
+}
+
 /* Nhãn Movie / OVA / ONA / Special ở góc dưới poster. */
 .format-badge {
   position: absolute;
