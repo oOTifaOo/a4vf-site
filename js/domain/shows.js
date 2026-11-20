@@ -65,9 +65,35 @@ const matchesQuery = (show, query) => {
   return !needle || normalizeText(show.searchText).includes(needle);
 };
 
-export function selectSeasonShows(shows, { seasonKey, sort, language, free, mine, query }, now) {
+const SEASON_START_MONTH = { winter: 0, spring: 3, summer: 6, fall: 9 };
+const VN_OFFSET_MS = 7 * 3600_000;
+
+/** Ngày đầu mùa (giờ Việt Nam): mùa Đông từ 1/1, Xuân 1/4, Hạ 1/7, Thu 1/10. */
+export function seasonStart(key) {
+  const [family, year] = key.split('-');
+  return Date.UTC(Number(year), SEASON_START_MONTH[family], 1) - VN_OFFSET_MS;
+}
+
+/** Phim dài hơn một năm (One Piece, Conan...) không tính là phim nối mùa, lịch ước lượng của chúng không đủ chính xác. */
+const MAX_CARRYOVER_MS = 400 * DAY_MS;
+
+/**
+ * Phim bắt đầu từ mùa trước nhưng còn chiếu ít nhất hai tuần trong mùa `seasonKey`
+ * (ví dụ phim 2 cour) cũng hiện ở mùa đó.
+ */
+export function carriesInto(show, seasonKey, now) {
+  if (show.season === seasonKey || !seasonKey) return false;
+  const start = seasonStart(seasonKey);
+  const airing = airingOf(show, now);
+  if (!(airing.first < start) || start - airing.first > MAX_CARRYOVER_MS) return false;
+  return airing.timeOf(show.episodes) >= start + WEEK_MS;
+}
+
+/** carryover: thêm phim nối từ mùa trước (trang Theo mùa). Tier list chỉ xếp phim của đúng mùa. */
+export function selectSeasonShows(shows, { seasonKey, sort, language, free, mine, query }, now, { carryover = false } = {}) {
   const list = shows.filter((show) =>
-    show.season === seasonKey && matchesFilters(show, { language, free, mine }) && matchesQuery(show, query));
+    (show.season === seasonKey || (carryover && carriesInto(show, seasonKey, now)))
+    && matchesFilters(show, { language, free, mine }) && matchesQuery(show, query));
   return sortShows(list, mine ? 'air' : sort, now);
 }
 
