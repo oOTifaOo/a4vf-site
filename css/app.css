@@ -2156,17 +2156,28 @@ main.container:has(.season-grid) {
   /* Máy tính: các phim của ngày đang chọn xếp thành lưới thẻ ngang. */
   .week-day ol {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
-    gap: 0.625rem;
+    grid-template-columns: repeat(auto-fill, minmax(24rem, 1fr));
+    gap: 0.875rem;
   }
 
   .week-item {
-    height: 7.5rem;
+    gap: 1rem;
+    height: 10rem;
+    padding: 0.625rem;
   }
 
   .poster--week {
-    flex-basis: 4.6rem;
-    width: 4.6rem;
+    flex-basis: 6.5rem;
+    width: 6.5rem;
+  }
+
+  .week-item__body {
+    gap: 0.25rem;
+    font-size: 1rem;
+  }
+
+  .week-item__title {
+    font-size: 1.0625rem;
   }
 
   .season-header__title h1,
