@@ -1,19 +1,21 @@
 # Báo cáo kiểm tra link
 
-Chạy lúc 2026-11-16 09:44 giờ Việt Nam. Đã kiểm tra 588 playlist YouTube và 619 trang FPT Play, Bilibili TV.
+Chạy lúc 2026-11-23 10:44 giờ Việt Nam. Đã kiểm tra 588 playlist YouTube và 619 trang FPT Play, Bilibili TV.
 
-- Link hỏng: 3
-- Thiếu link tập mới: 1
+- Link hỏng: 5
+- Thiếu link tập mới: 2
 - Có thể gắn nhầm phim: 2
 - Một playlist gắn nhiều phim: 7
 - Chưa có link: 0
-- Không kiểm tra được: 374
+- Không kiểm tra được: 375
 
 ## Link hỏng
 
 Sửa cột link_xem hoặc đánh dấu het_ban_quyen trong Datasheet.
 
 - OSHI NO KO - Đứa Con Của Thần Tượng (Ani-one Việt Nam, id 150672): YouTube báo playlist không còn hoặc đã riêng tư. https://www.youtube.com/playlist?list=PLazH8Ye77hfI
+- Nhật Ký Thường Ngày Của Tiên Vương Phần 1 (FPT Play, id 114121): FPT Play không còn trang phim này. https://fptplay.vn/xem-video/nhat-ky-thuong-ngay-cua-tien-vuong-phan-1-5e329a452089bd147d066293
+- Nhật Ký Thường Ngày Của Tiên Vương (Phần 2) (FPT Play, id 126357): FPT Play không còn trang phim này. https://fptplay.vn/xem-video/nhat-ky-thuong-ngay-cua-tien-vuong-phan-2-617bf3af2089bd045d2119ff
 - Thánh Hiệp Sĩ Nơi Tận Cùng Thế Giới (FPT Play, id 132473): FPT Play không còn trang phim này. https://fptplay.vn/xem-video/thanh-hiep-si-noi-tan-cung-the-gioi-67173d370c08400ca21a870b
 - Kubo Won't Let Me Be Invisible (FPT Play, id 148969): FPT Play không còn trang phim này. https://fptplay.vn/xem-video/kubo-khong-de-toi-het-cuu-67371905fbfcd097de3add97
 
@@ -21,7 +23,8 @@ Sửa cột link_xem hoặc đánh dấu het_ban_quyen trong Datasheet.
 
 Tập đã chiếu hơn 2 ngày mà chưa có link riêng. Người xem vẫn được mở playlist.
 
-- Pokémon: Chân Trời Mới (POPS, id 158871): tập 156, 157, chưa đọc được danh sách video. https://www.youtube.com/playlist?list=PLHnMhWQQpOSs
+- Pokémon: Chân Trời Mới (POPS, id 158871): tập 157, 158, chưa đọc được danh sách video. https://www.youtube.com/playlist?list=PLHnMhWQQpOSs
+- Trọng giáp hiệp sĩ chuyển sinh bị lưu đày trở nên vô địch nhờ kiến thức về game (Muse Việt Nam, id 180136): tập 21, chưa thấy trong playlist, có thể kênh đăng trễ hoặc lịch sai. https://www.youtube.com/playlist?list=PLdM751AKK4aP_eIasyZhApg9KmoF9Swx5
 
 ## Có thể gắn nhầm phim
 
@@ -46,7 +49,7 @@ Có thể đúng nếu kênh gộp nhiều mùa, nhưng nên xem lại.
 
 Không tính là hỏng. Thường do mạng hoặc nền tảng chặn máy kiểm tra.
 
-- Bilibili TV: HTTP 412, mã null: 374 link
+- Bilibili TV: HTTP 412, mã null: 375 link
 
 ## Độ tin cậy theo nền tảng
 
